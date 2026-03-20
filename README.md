@@ -1,5 +1,9 @@
 # 專案名稱：Wreckage_Insurance_Protocol (鏈上星際保險與殘骸回收協議)
 
+> 📜 **[EVE Frontier 專案憲法與開發準則](https://github.com/Eve-Frontier-Changsha-2026/Constitution/blob/master/EVE_Frontier_Project_Constitution.md)**
+> 本專案的世界觀設定與底層相依資源，均遵從此憲法文檔之規範。
+
+
 ## 📌 概念簡介
 「生於高風險，死於高收益」是 EVE 的代名詞。本協議是一套去中心化的戰場資產對沖機制，結合 Smart Object，讓玩家的艦艦或模組能買「戰損保險」，並在船隻摧毀時觸發自動理賠。同時，被擊毀的船隻可自動鑄造出具有所有權的「打撈憑證」，形成一門全新的殘骸回收生意。
 
