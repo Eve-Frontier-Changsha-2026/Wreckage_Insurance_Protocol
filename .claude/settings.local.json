@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sui:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(pnpm:*)",
+      "Bash(ls:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.evefrontier.com)",
+      "WebFetch(domain:sui-docs.evefrontier.com)",
+      "WebFetch(domain:whitepaper.evefrontier.com)",
+      "Read(//private/tmp/**)",
+      "Bash(gh api:*)",
+      "Bash(xargs -I {} gh api repos/evefrontier/world-contracts/git/trees/{} --jq .tree[].path)"
+    ]
+  },
+  "enabledPlugins": {
+    "sui-dev-agents@sui-dev-agents": true,
+    "playwright@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
+  }
+}
