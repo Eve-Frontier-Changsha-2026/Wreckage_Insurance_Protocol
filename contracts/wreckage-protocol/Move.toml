@@ -1,0 +1,7 @@
+[package]
+name = "wreckage_protocol"
+edition = "2024"
+
+[dependencies]
+world = { local = "../world-contracts/contracts/world" }
+wreckage_core = { local = "../wreckage-core" }
