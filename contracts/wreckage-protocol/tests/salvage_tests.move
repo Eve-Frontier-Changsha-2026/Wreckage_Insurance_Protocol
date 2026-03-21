@@ -5,8 +5,8 @@ module wreckage_protocol::salvage_tests;
 use sui::test_scenario;
 use world::killmail;
 use world::test_helpers;
-use wreckage_core::pool_config;
-use wreckage_core::salvage_nft;
+use wreckage_protocol::pool_config;
+use wreckage_protocol::salvage_nft;
 use wreckage_protocol::salvage;
 
 #[test]

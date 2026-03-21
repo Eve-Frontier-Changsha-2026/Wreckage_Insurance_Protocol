@@ -29,8 +29,8 @@ public struct SalvageMintedEvent has copy, drop {
     estimated_value: u64,
 }
 
-// === Constructor ===
-public fun mint(
+// === Constructor (package-only — blocks external forging of fake NFTs) ===
+public(package) fun mint(
     killmail_id: TenantItemId,
     victim_id: TenantItemId,
     solar_system_id: TenantItemId,
@@ -75,11 +75,11 @@ public fun status_auction(): u8 { STATUS_AUCTION }
 public fun status_sold(): u8 { STATUS_SOLD }
 public fun status_destroyed(): u8 { STATUS_DESTROYED }
 
-// === Mutators ===
-public fun set_status(nft: &mut SalvageNFT, status: u8) { nft.status = status; }
+// === Mutators (package-only) ===
+public(package) fun set_status(nft: &mut SalvageNFT, status: u8) { nft.status = status; }
 
-// === Destroy ===
-public fun destroy(nft: SalvageNFT) {
+// === Destroy (package-only) ===
+public(package) fun destroy(nft: SalvageNFT) {
     let SalvageNFT { id, .. } = nft;
     id.delete();
 }

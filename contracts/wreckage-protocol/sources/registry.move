@@ -49,7 +49,7 @@ public(package) fun record_claim(
 ) {
     assert!(
         !registry.processed_killmails.contains(killmail_key),
-        wreckage_core::errors::killmail_already_claimed(),
+        wreckage_protocol::errors::killmail_already_claimed(),
     );
     registry.processed_killmails.add(killmail_key, policy_id);
 }
@@ -66,7 +66,7 @@ public(package) fun register_policy(
 ) {
     assert!(
         !registry.active_policies.contains(character_id),
-        wreckage_core::errors::character_already_insured(),
+        wreckage_protocol::errors::character_already_insured(),
     );
     registry.active_policies.add(character_id, policy_id);
 }
@@ -82,9 +82,9 @@ public(package) fun unregister_policy(
 
 // === Version Check ===
 public fun assert_claim_registry_version(r: &ClaimRegistry) {
-    assert!(r.version == 1, wreckage_core::errors::version_mismatch());
+    assert!(r.version == 1, wreckage_protocol::errors::version_mismatch());
 }
 
 public fun assert_policy_registry_version(r: &PolicyRegistry) {
-    assert!(r.version == 1, wreckage_core::errors::version_mismatch());
+    assert!(r.version == 1, wreckage_protocol::errors::version_mismatch());
 }

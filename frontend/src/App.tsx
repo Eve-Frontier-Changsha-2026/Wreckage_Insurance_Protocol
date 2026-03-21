@@ -1,29 +1,32 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
-
-function Placeholder({ name }: { name: string }) {
-  return (
-    <div className="flex items-center justify-center h-64">
-      <p className="text-gray-500 text-lg">{name} — coming soon</p>
-    </div>
-  );
-}
+import DashboardPage from './pages/DashboardPage';
+import InsurePage from './pages/insure/InsurePage';
+import PolicyDetailPage from './pages/insure/PolicyDetailPage';
+import ClaimPage from './pages/claims/ClaimPage';
+import ClaimHistoryPage from './pages/claims/ClaimHistoryPage';
+import PoolDashboard from './pages/pool/PoolDashboard';
+import DepositPage from './pages/pool/DepositPage';
+import WithdrawPage from './pages/pool/WithdrawPage';
+import AuctionListPage from './pages/salvage/AuctionListPage';
+import AuctionDetailPage from './pages/salvage/AuctionDetailPage';
+import DemoPanel from './pages/demo/DemoPanel';
 
 export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Placeholder name="Dashboard" />} />
-        <Route path="insure" element={<Placeholder name="Insurance" />} />
-        <Route path="insure/:policyId" element={<Placeholder name="Policy Detail" />} />
-        <Route path="claims" element={<Placeholder name="Claims" />} />
-        <Route path="claims/history" element={<Placeholder name="Claim History" />} />
-        <Route path="pool" element={<Placeholder name="LP Pool" />} />
-        <Route path="pool/deposit" element={<Placeholder name="Deposit" />} />
-        <Route path="pool/withdraw" element={<Placeholder name="Withdraw" />} />
-        <Route path="salvage" element={<Placeholder name="Salvage Auctions" />} />
-        <Route path="salvage/:auctionId" element={<Placeholder name="Auction Detail" />} />
-        <Route path="demo" element={<Placeholder name="Demo Panel" />} />
+        <Route index element={<DashboardPage />} />
+        <Route path="insure" element={<InsurePage />} />
+        <Route path="insure/:policyId" element={<PolicyDetailPage />} />
+        <Route path="claims" element={<ClaimPage />} />
+        <Route path="claims/history" element={<ClaimHistoryPage />} />
+        <Route path="pool" element={<PoolDashboard />} />
+        <Route path="pool/deposit" element={<DepositPage />} />
+        <Route path="pool/withdraw" element={<WithdrawPage />} />
+        <Route path="salvage" element={<AuctionListPage />} />
+        <Route path="salvage/:auctionId" element={<AuctionDetailPage />} />
+        <Route path="demo" element={<DemoPanel />} />
       </Route>
     </Routes>
   );

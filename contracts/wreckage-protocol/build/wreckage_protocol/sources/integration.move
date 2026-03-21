@@ -9,7 +9,7 @@
 module wreckage_protocol::integration;
 
 use sui::clock::Clock;
-use wreckage_core::salvage_nft::SalvageNFT;
+use wreckage_protocol::salvage_nft::SalvageNFT;
 use world::in_game_id::TenantItemId;
 
 // === Bounty Escrow Mock (Section 16.1) ===

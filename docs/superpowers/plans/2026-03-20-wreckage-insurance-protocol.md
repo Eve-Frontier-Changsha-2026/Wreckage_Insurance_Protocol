@@ -146,7 +146,7 @@ frontend/
 - Create: `contracts/wreckage-core/sources/errors.move`
 - Create: `contracts/wreckage-protocol/Move.toml`
 
-- [ ] **Step 1: Create wreckage-core package**
+- [x]**Step 1: Create wreckage-core package**
 
 ```bash
 cd /Users/ramonliao/Documents/Code/Project/Web3/Hackathon/2026_HoH_SUI_HackerHouse_Changsha/EVE_Frontier/build/projects/Wreckage_Insurance_Protocol
@@ -164,7 +164,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 world = { git = "https://github.com/evefrontier/world-contracts.git", subdir = "contracts/world", rev = "main" }
 ```
 
-- [ ] **Step 2: Create errors.move**
+- [x]**Step 2: Create errors.move**
 
 ```move
 // contracts/wreckage-core/sources/errors.move
@@ -280,7 +280,7 @@ public fun protocol_paused(): u64 { 61 }
 public fun invalid_config(): u64 { 62 }
 ```
 
-- [ ] **Step 3: Create wreckage-protocol Move.toml**
+- [x]**Step 3: Create wreckage-protocol Move.toml**
 
 ```toml
 # contracts/wreckage-protocol/Move.toml
@@ -298,12 +298,12 @@ wreckage_core = { local = "../wreckage-core" }
 mkdir -p contracts/wreckage-protocol/sources contracts/wreckage-protocol/tests
 ```
 
-- [ ] **Step 4: Build wreckage-core to verify dependency resolution**
+- [x]**Step 4: Build wreckage-core to verify dependency resolution**
 
 Run: `cd contracts/wreckage-core && sui move build`
 Expected: Build succeeds (may take a while for first dependency fetch)
 
-- [ ] **Step 5: Commit**
+- [x]**Step 5: Commit**
 
 ```bash
 git add contracts/
@@ -318,7 +318,7 @@ git commit -m "feat: scaffold wreckage-core and wreckage-protocol packages with 
 - Create: `contracts/wreckage-core/sources/pool_config.move`
 - Test: `contracts/wreckage-core/tests/pool_config_tests.move`
 
-- [ ] **Step 1: Write pool_config.move**
+- [x]**Step 1: Write pool_config.move**
 
 ```move
 // contracts/wreckage-core/sources/pool_config.move
@@ -508,7 +508,7 @@ public fun test_auction_config(): AuctionConfig {
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 ```move
 // contracts/wreckage-core/tests/pool_config_tests.move
@@ -556,12 +556,12 @@ fun test_create_valid_auction_config() {
 }
 ```
 
-- [ ] **Step 3: Run tests**
+- [x]**Step 3: Run tests**
 
 Run: `cd contracts/wreckage-core && sui move test`
 Expected: All tests pass
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-core/
@@ -576,7 +576,7 @@ git commit -m "feat(core): add PoolConfig and AuctionConfig with validation"
 - Create: `contracts/wreckage-core/sources/policy.move`
 - Test: `contracts/wreckage-core/tests/policy_tests.move`
 
-- [ ] **Step 1: Write policy.move**
+- [x]**Step 1: Write policy.move**
 
 ```move
 // contracts/wreckage-core/sources/policy.move
@@ -725,7 +725,7 @@ public fun destroy(p: InsurancePolicy) {
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 ```move
 // contracts/wreckage-core/tests/policy_tests.move
@@ -756,12 +756,12 @@ fun test_policy_mutators() {
 
 > **Note**: Full policy tests require `TenantItemId` which needs `in_game_id::create_key` (package-visible). Deep unit tests will be in `wreckage-protocol/tests/` where we can use `#[test_only]` helpers from world contracts.
 
-- [ ] **Step 3: Build to verify compilation**
+- [x]**Step 3: Build to verify compilation**
 
 Run: `cd contracts/wreckage-core && sui move build`
 Expected: Build succeeds
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-core/
@@ -775,7 +775,7 @@ git commit -m "feat(core): add InsurancePolicy object with accessors and mutator
 **Files:**
 - Create: `contracts/wreckage-core/sources/salvage_nft.move`
 
-- [ ] **Step 1: Write salvage_nft.move**
+- [x]**Step 1: Write salvage_nft.move**
 
 ```move
 // contracts/wreckage-core/sources/salvage_nft.move
@@ -865,7 +865,7 @@ public fun destroy(nft: SalvageNFT) {
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 ```move
 // contracts/wreckage-core/tests/salvage_nft_tests.move
@@ -883,12 +883,12 @@ fun test_status_constants() {
 // Note: full mint tests require TenantItemId, tested in wreckage-protocol e2e tests
 ```
 
-- [ ] **Step 3: Build + run tests**
+- [x]**Step 3: Build + run tests**
 
 Run: `cd contracts/wreckage-core && sui move build && sui move test`
 Expected: Build + tests pass
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-core/
@@ -902,7 +902,7 @@ git commit -m "feat(core): add SalvageNFT with mint, accessors, and destroy"
 **Files:**
 - Create: `contracts/wreckage-core/sources/rider.move`
 
-- [ ] **Step 1: Write rider.move**
+- [x]**Step 1: Write rider.move**
 
 ```move
 // contracts/wreckage-core/sources/rider.move
@@ -937,7 +937,7 @@ public fun calculate_self_destruct_payout(
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 ```move
 // contracts/wreckage-core/tests/rider_tests.move
@@ -969,12 +969,12 @@ fun test_self_destruct_payout_reduction() {
 }
 ```
 
-- [ ] **Step 3: Run all core tests**
+- [x]**Step 3: Run all core tests**
 
 Run: `cd contracts/wreckage-core && sui move test`
 Expected: All tests pass
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-core/
@@ -994,7 +994,7 @@ git commit -m "feat(core): add rider module for self-destruct premium and payout
 
 > **IMPORTANT (C3 fix):** Only ONE module per Sui Move package can have an `init` function. All shared object creation (AdminCap, ProtocolConfig, ClaimRegistry, PolicyRegistry, AuctionRegistry) goes into `init.move`. Other modules expose `create_*` functions called from init.
 
-- [ ] **Step 1: Write config.move (NO init function)**
+- [x]**Step 1: Write config.move (NO init function)**
 
 ```move
 // contracts/wreckage-protocol/sources/config.move
@@ -1135,7 +1135,7 @@ public fun create_and_share_pool(
 }
 ```
 
-- [ ] **Step 1b: Write init.move (consolidated init)**
+- [x]**Step 1b: Write init.move (consolidated init)**
 
 ```move
 // contracts/wreckage-protocol/sources/init.move
@@ -1181,7 +1181,7 @@ public fun init_for_testing(ctx: &mut TxContext) {
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 ```move
 // contracts/wreckage-protocol/tests/config_tests.move
@@ -1238,12 +1238,12 @@ fun test_add_and_get_pool_tier() {
 }
 ```
 
-- [ ] **Step 3: Run tests**
+- [x]**Step 3: Run tests**
 
 Run: `cd contracts/wreckage-protocol && sui move test`
 Expected: All tests pass
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-protocol/
@@ -1258,7 +1258,7 @@ git commit -m "feat(protocol): add AdminCap + ProtocolConfig with admin function
 - Create: `contracts/wreckage-protocol/sources/registry.move`
 - Test: `contracts/wreckage-protocol/tests/registry_tests.move`
 
-- [ ] **Step 1: Write registry.move**
+- [x]**Step 1: Write registry.move**
 
 ```move
 // contracts/wreckage-protocol/sources/registry.move
@@ -1345,7 +1345,7 @@ public fun assert_policy_registry_version(r: &PolicyRegistry) {
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 ```move
 // contracts/wreckage-protocol/tests/registry_tests.move
@@ -1418,12 +1418,12 @@ fun test_policy_registry_one_per_character() {
 }
 ```
 
-- [ ] **Step 3: Run tests**
+- [x]**Step 3: Run tests**
 
 Run: `cd contracts/wreckage-protocol && sui move test`
 Expected: All tests pass
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-protocol/
@@ -1438,7 +1438,7 @@ git commit -m "feat(protocol): add ClaimRegistry and PolicyRegistry for global d
 - Create: `contracts/wreckage-protocol/sources/risk_pool.move`
 - Test: `contracts/wreckage-protocol/tests/risk_pool_tests.move`
 
-- [ ] **Step 1: Write risk_pool.move**
+- [x]**Step 1: Write risk_pool.move**
 
 ```move
 // contracts/wreckage-protocol/sources/risk_pool.move
@@ -1696,7 +1696,7 @@ public fun destroy_empty_position(pos: LPPosition) {
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 Tests should cover: deposit, withdraw, virtual liquidity, zero-share check, lock period, utilization cap, dynamic fee, pay_claim + reservation release atomicity. Write these in `contracts/wreckage-protocol/tests/risk_pool_tests.move`.
 
@@ -1710,12 +1710,12 @@ Key test cases:
 - `test_pay_claim_atomic`
 - `test_utilization_safety_valve`
 
-- [ ] **Step 3: Run tests**
+- [x]**Step 3: Run tests**
 
 Run: `cd contracts/wreckage-protocol && sui move test`
 Expected: All tests pass
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-protocol/
@@ -1730,7 +1730,7 @@ git commit -m "feat(protocol): add RiskPool with LP mechanics, virtual liquidity
 - Create: `contracts/wreckage-protocol/sources/anti_fraud.move`
 - Test: `contracts/wreckage-protocol/tests/anti_fraud_tests.move`
 
-- [ ] **Step 1: Write anti_fraud.move**
+- [x]**Step 1: Write anti_fraud.move**
 
 Core validation logic: checks killmail matching, cooldown, frequency, self-destruct routing. Reads `&Killmail` fields directly (Move 2024 public struct).
 
@@ -1739,7 +1739,7 @@ Key functions:
 - `validate_self_destruct_claim(policy, killmail, claim_registry, clock, config) → FraudCheckResult`
 - `calculate_payout(coverage, claim_count, decay_rate, deductible_bps) → u64` (u128 intermediate)
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 Key test cases:
 - `test_valid_standard_claim_passes`
@@ -1753,12 +1753,12 @@ Key test cases:
 - `test_payout_calculation_with_decay`
 - `test_payout_calculation_overflow_safe`
 
-- [ ] **Step 3: Run tests**
+- [x]**Step 3: Run tests**
 
 Run: `cd contracts/wreckage-protocol && sui move test`
 Expected: All tests pass
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-protocol/
@@ -1773,7 +1773,7 @@ git commit -m "feat(protocol): add anti-fraud validation with payout calculation
 - Create: `contracts/wreckage-protocol/sources/underwriting.move`
 - Test: `contracts/wreckage-protocol/tests/underwriting_tests.move`
 
-- [ ] **Step 1: Write underwriting.move**
+- [x]**Step 1: Write underwriting.move**
 
 Key functions:
 - `purchase_policy(config, pool, policy_registry, character, coverage, include_sd, payment, clock, ctx) → InsurancePolicy`
@@ -1787,7 +1787,7 @@ Required events: `PolicyExpiredEvent { policy_id }` (in expire_policy function).
 
 **All functions MUST assert version** on every shared object parameter (ProtocolConfig, RiskPool, PolicyRegistry). Use `config::assert_version()`, `risk_pool` version check pattern, `registry::assert_policy_registry_version()`.
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 Key test cases:
 - `test_purchase_policy_success`
@@ -1799,7 +1799,7 @@ Key test cases:
 - `test_transfer_resets_ncb_and_cooldown`
 - `test_expire_unregisters_from_policy_registry`
 
-- [ ] **Step 3: Run tests, commit**
+- [x]**Step 3: Run tests, commit**
 
 ---
 
@@ -1809,7 +1809,7 @@ Key test cases:
 - Create: `contracts/wreckage-protocol/sources/claims.move`
 - Test: `contracts/wreckage-protocol/tests/claims_tests.move`
 
-- [ ] **Step 1: Write claims.move**
+- [x]**Step 1: Write claims.move**
 
 Key functions:
 - `submit_claim(policy, killmail, pool, claim_registry, config, clock, ctx)`
@@ -1823,7 +1823,7 @@ Required events (from spec Section 13):
 
 Version checks: assert version on ALL shared objects passed (pool, claim_registry, config).
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 Key test cases:
 - `test_submit_claim_full_flow`
@@ -1833,7 +1833,7 @@ Key test cases:
 - `test_claim_rejects_expired_policy`
 - `test_claim_rejects_duplicate_killmail`
 
-- [ ] **Step 3: Run tests, commit**
+- [x]**Step 3: Run tests, commit**
 
 ---
 
@@ -1845,7 +1845,7 @@ Key test cases:
 
 > **C1 fix**: This module bridges claims.move and auction.move. It handles SalvageNFT minting from claim context and wrapping into auction creation.
 
-- [ ] **Step 1: Write salvage.move**
+- [x]**Step 1: Write salvage.move**
 
 ```move
 // contracts/wreckage-protocol/sources/salvage.move
@@ -1890,13 +1890,13 @@ public fun mint_from_killmail(
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 Key test cases:
 - `test_estimate_salvage_value_by_tier`
 - `test_mint_from_killmail`
 
-- [ ] **Step 3: Run tests, commit**
+- [x]**Step 3: Run tests, commit**
 
 ```bash
 git add contracts/wreckage-protocol/sources/salvage.move contracts/wreckage-protocol/tests/salvage_tests.move
@@ -1911,7 +1911,7 @@ git commit -m "feat(protocol): add salvage lifecycle module bridging claims and 
 - Create: `contracts/wreckage-protocol/sources/auction.move`
 - Test: `contracts/wreckage-protocol/tests/auction_tests.move`
 
-- [ ] **Step 1: Write auction.move**
+- [x]**Step 1: Write auction.move**
 
 Key structs: `AuctionRegistry` (shared, config only) + `Auction` (standalone shared per auction).
 
@@ -1942,7 +1942,7 @@ Key functions:
 - `buyout(auction, registry, pool, config, payment, clock, ctx)` — floor price purchase
 - `destroy_unsold(auction, registry, clock, ctx)` — destroy NFT if no buyers
 
-- [ ] **Step 2: Write tests**
+- [x]**Step 2: Write tests**
 
 Key test cases:
 - `test_place_bid_and_settle`
@@ -1953,7 +1953,7 @@ Key test cases:
 - `test_destroy_unsold_nft`
 - `test_outbid_returns_previous_bid`
 
-- [ ] **Step 3: Run tests, commit**
+- [x]**Step 3: Run tests, commit**
 
 ---
 
@@ -1963,9 +1963,9 @@ Key test cases:
 - Create: `contracts/wreckage-protocol/sources/subrogation.move`
 - Create: `contracts/wreckage-protocol/sources/integration.move`
 
-- [ ] **Step 1: Write subrogation.move** — SubrogationEvent emission
-- [ ] **Step 2: Write integration.move** — Mock Bounty/Fleet structs + functions
-- [ ] **Step 3: Build + test, commit**
+- [x]**Step 1: Write subrogation.move** — SubrogationEvent emission
+- [x]**Step 2: Write integration.move** — Mock Bounty/Fleet structs + functions
+- [x]**Step 3: Build + test, commit**
 
 ---
 
@@ -1974,7 +1974,7 @@ Key test cases:
 **Files:**
 - Create: `contracts/wreckage-protocol/tests/e2e_tests.move`
 
-- [ ] **Step 1: Write full demo script as test**
+- [x]**Step 1: Write full demo script as test**
 
 Test the complete flow from the Demo Script (spec section 17):
 1. Init all shared objects
@@ -1988,7 +1988,7 @@ Test the complete flow from the Demo Script (spec section 17):
 9. Duplicate killmail rejection
 10. Duplicate character policy rejection
 
-- [ ] **Step 2: Write monkey tests**
+- [x]**Step 2: Write monkey tests**
 
 Extreme scenarios:
 - Claim with MAX_U64 coverage (overflow check)
@@ -1997,12 +1997,12 @@ Extreme scenarios:
 - Zero-premium edge case
 - Rapid sequential bids on same auction
 
-- [ ] **Step 3: Run all tests**
+- [x]**Step 3: Run all tests**
 
 Run: `cd contracts/wreckage-protocol && sui move test`
 Expected: All tests pass (including e2e + monkey)
 
-- [ ] **Step 4: Commit**
+- [x]**Step 4: Commit**
 
 ```bash
 git add contracts/wreckage-protocol/tests/
@@ -2015,14 +2015,14 @@ git commit -m "test(protocol): add e2e integration tests and monkey tests"
 
 ### Task 15: Deploy to Testnet
 
-- [ ] **Step 1: Build both packages**
+- [x]**Step 1: Build both packages**
 
 ```bash
 cd contracts/wreckage-core && sui move build
 cd contracts/wreckage-protocol && sui move build
 ```
 
-- [ ] **Step 2: Deploy wreckage-core**
+- [x]**Step 2: Deploy wreckage-core**
 
 ```bash
 cd contracts/wreckage-core
@@ -2031,14 +2031,14 @@ sui client publish --gas-budget 500000000
 
 Record: `CORE_PACKAGE_ID`
 
-- [ ] **Step 3: Update wreckage-protocol dependency to published core**
+- [x]**Step 3: Update wreckage-protocol dependency to published core**
 
 Update `contracts/wreckage-protocol/Move.toml`:
 ```toml
 wreckage_core = { address = "<CORE_PACKAGE_ID>" }
 ```
 
-- [ ] **Step 4: Deploy wreckage-protocol**
+- [x]**Step 4: Deploy wreckage-protocol**
 
 ```bash
 cd contracts/wreckage-protocol
@@ -2047,11 +2047,11 @@ sui client publish --gas-budget 500000000
 
 Record: `PROTOCOL_PACKAGE_ID`, `AdminCap ID`, `ProtocolConfig ID`, `ClaimRegistry ID`, `PolicyRegistry ID`
 
-- [ ] **Step 5: Initialize pools (Tier 1, 2, 3)**
+- [x]**Step 5: Initialize pools (Tier 1, 2, 3)**
 
 Use `sui client call` to add pool tiers via `config::add_pool_tier` + create pools via `risk_pool::create_pool`.
 
-- [ ] **Step 6: Commit deployment records**
+- [x]**Step 6: Commit deployment records**
 
 Save all IDs to `contracts/deployment.json` and commit.
 
@@ -2067,7 +2067,7 @@ Save all IDs to `contracts/deployment.json` and commit.
 - Create: `frontend/src/config/network.ts`
 - Create: `frontend/src/lib/contracts.ts`, `frontend/src/lib/types.ts`
 
-- [ ] **Step 1: Initialize React + Vite + TailwindCSS project**
+- [x]**Step 1: Initialize React + Vite + TailwindCSS project**
 
 ```bash
 cd /Users/ramonliao/Documents/Code/Project/Web3/Hackathon/2026_HoH_SUI_HackerHouse_Changsha/EVE_Frontier/build/projects/Wreckage_Insurance_Protocol
@@ -2077,15 +2077,15 @@ npm install @mysten/dapp-kit-react @mysten/sui @tanstack/react-query react-route
 npm install -D tailwindcss @tailwindcss/vite
 ```
 
-- [ ] **Step 2: Configure dApp Kit provider + router + TailwindCSS**
-- [ ] **Step 3: Create contracts.ts with package IDs + types.ts**
-- [ ] **Step 4: Create Layout.tsx + Navbar.tsx** (S2 fix: layout before pages)
-- [ ] **Step 5: Verify dev server runs**
+- [x]**Step 2: Configure dApp Kit provider + router + TailwindCSS**
+- [x]**Step 3: Create contracts.ts with package IDs + types.ts**
+- [x]**Step 4: Create Layout.tsx + Navbar.tsx** (S2 fix: layout before pages)
+- [x]**Step 5: Verify dev server runs**
 
 Run: `cd frontend && npm run dev`
 Expected: Opens in browser with wallet connect
 
-- [ ] **Step 5: Commit**
+- [x]**Step 5: Commit**
 
 ---
 
@@ -2099,8 +2099,8 @@ Expected: Opens in browser with wallet connect
 
 Each file builds a `Transaction` for its domain operations. These are pure functions (no hooks), testable independently.
 
-- [ ] **Step 1: Write all PTB builders**
-- [ ] **Step 2: Commit**
+- [x]**Step 1: Write all PTB builders**
+- [x]**Step 2: Commit**
 
 ---
 
@@ -2115,8 +2115,8 @@ Each file builds a `Transaction` for its domain operations. These are pure funct
 
 Each hook wraps dApp Kit queries + PTB execution for its domain.
 
-- [ ] **Step 1: Write all hooks**
-- [ ] **Step 2: Commit**
+- [x]**Step 1: Write all hooks**
+- [x]**Step 2: Commit**
 
 ---
 
@@ -2129,10 +2129,10 @@ Each hook wraps dApp Kit queries + PTB execution for its domain.
 - Create: `frontend/src/components/policy/RiderToggle.tsx`
 - Create: `frontend/src/components/policy/PolicyCard.tsx`
 
-- [ ] **Step 1: Build InsurePage** — tier select → coverage slider → rider toggle → premium calc → confirm
-- [ ] **Step 2: Build PolicyDetailPage** — policy details, status, claim entry
-- [ ] **Step 3: Test with testnet wallet**
-- [ ] **Step 4: Commit**
+- [x]**Step 1: Build InsurePage** — tier select → coverage slider → rider toggle → premium calc → confirm
+- [x]**Step 2: Build PolicyDetailPage** — policy details, status, claim entry
+- [x]**Step 3: Test with testnet wallet**
+- [x]**Step 4: Commit**
 
 ---
 
@@ -2142,10 +2142,10 @@ Each hook wraps dApp Kit queries + PTB execution for its domain.
 - Create: `frontend/src/pages/claims/ClaimPage.tsx`
 - Create: `frontend/src/pages/claims/ClaimHistoryPage.tsx`
 
-- [ ] **Step 1: Build ClaimPage** — select policy → match killmail → payout breakdown → submit
-- [ ] **Step 2: Build ClaimHistoryPage** — query events
-- [ ] **Step 3: Test with testnet**
-- [ ] **Step 4: Commit**
+- [x]**Step 1: Build ClaimPage** — select policy → match killmail → payout breakdown → submit
+- [x]**Step 2: Build ClaimHistoryPage** — query events
+- [x]**Step 3: Test with testnet**
+- [x]**Step 4: Commit**
 
 ---
 
@@ -2159,10 +2159,10 @@ Each hook wraps dApp Kit queries + PTB execution for its domain.
 - Create: `frontend/src/components/pool/LPPositionCard.tsx`
 - Create: `frontend/src/components/pool/ExitFeeIndicator.tsx`
 
-- [ ] **Step 1: Build PoolDashboard** — per-tier TVL, APR, utilization, exit fee
-- [ ] **Step 2: Build Deposit + Withdraw flows**
-- [ ] **Step 3: Test with testnet**
-- [ ] **Step 4: Commit**
+- [x]**Step 1: Build PoolDashboard** — per-tier TVL, APR, utilization, exit fee
+- [x]**Step 2: Build Deposit + Withdraw flows**
+- [x]**Step 3: Test with testnet**
+- [x]**Step 4: Commit**
 
 ---
 
@@ -2175,10 +2175,10 @@ Each hook wraps dApp Kit queries + PTB execution for its domain.
 - Create: `frontend/src/components/auction/BidForm.tsx`
 - Create: `frontend/src/components/auction/CountdownTimer.tsx`
 
-- [ ] **Step 1: Build AuctionListPage** — list active auctions
-- [ ] **Step 2: Build AuctionDetailPage** — bid + countdown + settle/buyout
-- [ ] **Step 3: Test with testnet**
-- [ ] **Step 4: Commit**
+- [x]**Step 1: Build AuctionListPage** — list active auctions
+- [x]**Step 2: Build AuctionDetailPage** — bid + countdown + settle/buyout
+- [x]**Step 3: Test with testnet**
+- [x]**Step 4: Commit**
 
 ---
 
@@ -2193,9 +2193,9 @@ Admin-only page for demo:
 - Trigger mock Bounty/Fleet integration
 - Display full event log
 
-- [ ] **Step 1: Build DemoPanel**
-- [ ] **Step 2: Test full demo script flow**
-- [ ] **Step 3: Commit**
+- [x]**Step 1: Build DemoPanel**
+- [x]**Step 2: Test full demo script flow**
+- [x]**Step 3: Commit**
 
 ---
 
@@ -2207,10 +2207,10 @@ Admin-only page for demo:
 
 > Note: Layout.tsx and Navbar.tsx scaffolded in Task 16. This task adds the Dashboard page and finalizes navigation.
 
-- [ ] **Step 1: Build Dashboard** — protocol stats, recent events, quick links
-- [ ] **Step 2: Finalize Navbar** — add links to all pages
-- [ ] **Step 3: Final integration test of all pages**
-- [ ] **Step 4: Commit**
+- [x]**Step 1: Build Dashboard** — protocol stats, recent events, quick links
+- [x]**Step 2: Finalize Navbar** — add links to all pages
+- [x]**Step 3: Final integration test of all pages**
+- [x]**Step 4: Commit**
 
 ---
 
@@ -2218,10 +2218,10 @@ Admin-only page for demo:
 
 ### Task 25: Progress Update + Notes
 
-- [ ] **Step 1: Update `progress.md`** — mark contract ✅, frontend ✅
-- [ ] **Step 2: Write `move-notes.md`** — module summaries, deployment IDs, known risks
-- [ ] **Step 3: Update `plan.md`** — check off completed items
-- [ ] **Step 4: Final commit**
+- [x]**Step 1: Update `progress.md`** — mark contract ✅, frontend ✅
+- [x]**Step 2: Write `move-notes.md`** — module summaries, deployment IDs, known risks
+- [x]**Step 3: Update `plan.md`** — check off completed items
+- [x]**Step 4: Final commit**
 
 ```bash
 git add -A

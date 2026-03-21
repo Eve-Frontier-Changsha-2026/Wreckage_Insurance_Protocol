@@ -15,7 +15,7 @@ fun init(ctx: &mut TxContext) {
     // ProtocolConfig → shared (no `store`, share inside config module)
     config::create_and_share_protocol_config(
         ctx.sender(),
-        wreckage_core::pool_config::new_auction_config(
+        wreckage_protocol::pool_config::new_auction_config(
             259200,      // auction_duration = 72h
             172800,      // buyout_duration = 48h
             500,         // min_bid_increment_bps = 5%
@@ -34,7 +34,7 @@ fun init(ctx: &mut TxContext) {
 
     // AuctionRegistry → shared
     auction::create_and_share_auction_registry(
-        wreckage_core::pool_config::new_auction_config(
+        wreckage_protocol::pool_config::new_auction_config(
             259200,      // auction_duration = 72h
             172800,      // buyout_duration = 48h
             500,         // min_bid_increment_bps = 5%

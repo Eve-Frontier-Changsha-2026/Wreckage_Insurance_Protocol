@@ -7,7 +7,7 @@ use sui::coin;
 use sui::sui::SUI;
 use sui::clock;
 use wreckage_protocol::risk_pool::{Self, RiskPool};
-use wreckage_core::pool_config;
+use wreckage_protocol::pool_config;
 
 // Helper: create a pool via package-visible constructor (using test scenario)
 fun setup_pool(scenario: &mut test_scenario::Scenario) {

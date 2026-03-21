@@ -4,9 +4,9 @@ module wreckage_protocol::claims;
 
 use sui::clock::Clock;
 use sui::event;
-use wreckage_core::policy::InsurancePolicy;
-use wreckage_core::rider;
-use wreckage_core::errors;
+use wreckage_protocol::policy::InsurancePolicy;
+use wreckage_protocol::rider;
+use wreckage_protocol::errors;
 use wreckage_protocol::config::{Self, ProtocolConfig};
 use wreckage_protocol::registry::{Self, ClaimRegistry};
 use wreckage_protocol::risk_pool::{Self, RiskPool};

@@ -5,7 +5,7 @@
 module wreckage_protocol::subrogation;
 
 use sui::event;
-use wreckage_core::pool_config::PoolConfig;
+use wreckage_protocol::pool_config::PoolConfig;
 use world::killmail::{Self, Killmail};
 use world::in_game_id::TenantItemId;
 

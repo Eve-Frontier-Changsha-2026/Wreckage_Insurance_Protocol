@@ -2,8 +2,8 @@
 module wreckage_protocol::anti_fraud;
 
 use sui::clock::Clock;
-use wreckage_core::policy::InsurancePolicy;
-use wreckage_core::errors;
+use wreckage_protocol::policy::InsurancePolicy;
+use wreckage_protocol::errors;
 use wreckage_protocol::config::ProtocolConfig;
 use wreckage_protocol::registry::ClaimRegistry;
 use world::killmail::{Self, Killmail};

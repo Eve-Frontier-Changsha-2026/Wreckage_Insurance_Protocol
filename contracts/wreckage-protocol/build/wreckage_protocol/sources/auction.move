@@ -6,9 +6,9 @@ use sui::coin::{Self, Coin};
 use sui::sui::SUI;
 use sui::clock::Clock;
 use sui::event;
-use wreckage_core::pool_config::AuctionConfig;
-use wreckage_core::salvage_nft::{Self, SalvageNFT};
-use wreckage_core::errors;
+use wreckage_protocol::pool_config::AuctionConfig;
+use wreckage_protocol::salvage_nft::{Self, SalvageNFT};
+use wreckage_protocol::errors;
 use wreckage_protocol::config::ProtocolConfig;
 use wreckage_protocol::risk_pool::RiskPool;
 

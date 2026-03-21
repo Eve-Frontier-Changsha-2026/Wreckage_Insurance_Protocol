@@ -58,8 +58,8 @@ public fun status_claimed(): u8 { STATUS_CLAIMED }
 public fun status_expired(): u8 { STATUS_EXPIRED }
 public fun status_cancelled(): u8 { STATUS_CANCELLED }
 
-// === Constructor (package-visible, called by wreckage-protocol via public wrapper) ===
-public fun create(
+// === Constructor (package-only — blocks external forging of fake policies) ===
+public(package) fun create(
     insured_character_id: TenantItemId,
     coverage_amount: u64,
     premium_paid: u64,
@@ -119,13 +119,13 @@ public fun version(p: &InsurancePolicy): u64 { p.version }
 
 public fun is_active(p: &InsurancePolicy): bool { p.status == STATUS_ACTIVE }
 
-// === Mutators (public, for wreckage-protocol cross-package access) ===
-public fun set_status(p: &mut InsurancePolicy, status: u8) { p.status = status; }
-public fun set_cooldown_until(p: &mut InsurancePolicy, until: u64) { p.cooldown_until = until; }
-public fun increment_claim_count(p: &mut InsurancePolicy) { p.claim_count = p.claim_count + 1; }
-public fun reset_no_claim_streak(p: &mut InsurancePolicy) { p.no_claim_streak = 0; }
-public fun increment_no_claim_streak(p: &mut InsurancePolicy) { p.no_claim_streak = p.no_claim_streak + 1; }
-public fun set_renewal_data(
+// === Mutators (package-only — blocks external state manipulation) ===
+public(package) fun set_status(p: &mut InsurancePolicy, status: u8) { p.status = status; }
+public(package) fun set_cooldown_until(p: &mut InsurancePolicy, until: u64) { p.cooldown_until = until; }
+public(package) fun increment_claim_count(p: &mut InsurancePolicy) { p.claim_count = p.claim_count + 1; }
+public(package) fun reset_no_claim_streak(p: &mut InsurancePolicy) { p.no_claim_streak = 0; }
+public(package) fun increment_no_claim_streak(p: &mut InsurancePolicy) { p.no_claim_streak = p.no_claim_streak + 1; }
+public(package) fun set_renewal_data(
     p: &mut InsurancePolicy,
     new_premium: u64,
     new_expires_at: u64,
@@ -137,8 +137,8 @@ public fun set_renewal_data(
     p.renewal_count = p.renewal_count + 1;
 }
 
-// === Event Emitters (for cross-package use) ===
-public fun emit_renewed_event(
+// === Event Emitters (package-only — blocks fake event injection) ===
+public(package) fun emit_renewed_event(
     policy_id: ID,
     renewal_count: u8,
     no_claim_streak: u8,
@@ -150,12 +150,12 @@ public fun emit_renewed_event(
     });
 }
 
-public fun emit_transferred_event(policy_id: ID, from: address, to: address) {
+public(package) fun emit_transferred_event(policy_id: ID, from: address, to: address) {
     sui::event::emit(PolicyTransferredEvent { policy_id, from, to });
 }
 
-// === Delete ===
-public fun destroy(p: InsurancePolicy) {
+// === Delete (package-only — blocks external destruction of active policies) ===
+public(package) fun destroy(p: InsurancePolicy) {
     let InsurancePolicy { id, .. } = p;
     id.delete();
 }

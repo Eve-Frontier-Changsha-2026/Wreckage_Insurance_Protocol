@@ -6,8 +6,8 @@ use sui::coin::{Self, Coin};
 use sui::sui::SUI;
 use sui::clock::Clock;
 use sui::event;
-use wreckage_core::pool_config::PoolConfig;
-use wreckage_core::errors;
+use wreckage_protocol::pool_config::PoolConfig;
+use wreckage_protocol::errors;
 
 // === Constants ===
 const VIRTUAL_SHARES: u64 = 1000;

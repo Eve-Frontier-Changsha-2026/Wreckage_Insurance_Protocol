@@ -1,7 +1,7 @@
 // contracts/wreckage-protocol/sources/config.move
 module wreckage_protocol::config;
 
-use wreckage_core::pool_config::{PoolConfig, AuctionConfig};
+use wreckage_protocol::pool_config::{PoolConfig, AuctionConfig};
 
 // === Structs ===
 public struct AdminCap has key, store { id: UID }
@@ -74,7 +74,7 @@ public fun get_pool_config(c: &ProtocolConfig, tier: u8): &PoolConfig {
         };
         i = i + 1;
     };
-    abort wreckage_core::errors::invalid_config()
+    abort wreckage_protocol::errors::invalid_config()
 }
 
 // === Admin Functions ===
@@ -104,7 +104,7 @@ public fun update_pool_config(
         };
         i = i + 1;
     };
-    abort wreckage_core::errors::invalid_config()
+    abort wreckage_protocol::errors::invalid_config()
 }
 
 public fun set_policy_paused(_: &AdminCap, config: &mut ProtocolConfig, paused: bool) {
@@ -140,5 +140,5 @@ public fun admin_create_pool(
 
 // === Version Check (used by ALL shared object operations) ===
 public fun assert_version(c: &ProtocolConfig) {
-    assert!(c.version == 1, wreckage_core::errors::version_mismatch());
+    assert!(c.version == 1, wreckage_protocol::errors::version_mismatch());
 }

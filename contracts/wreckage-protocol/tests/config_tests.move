@@ -5,7 +5,7 @@ module wreckage_protocol::config_tests;
 use sui::test_scenario;
 use wreckage_protocol::init as protocol_init;
 use wreckage_protocol::config::{Self, AdminCap, ProtocolConfig};
-use wreckage_core::pool_config;
+use wreckage_protocol::pool_config;
 
 #[test]
 fun test_init_creates_admin_cap_and_config() {

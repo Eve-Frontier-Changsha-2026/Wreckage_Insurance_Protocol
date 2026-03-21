@@ -2,8 +2,8 @@
 module wreckage_protocol::salvage;
 
 use world::killmail::{Self, Killmail};
-use wreckage_core::salvage_nft::{Self, SalvageNFT};
-use wreckage_core::pool_config::PoolConfig;
+use wreckage_protocol::salvage_nft::{Self, SalvageNFT};
+use wreckage_protocol::pool_config::PoolConfig;
 
 /// Estimate salvage value from killmail + tier.
 /// Higher risk tier = higher salvage value.

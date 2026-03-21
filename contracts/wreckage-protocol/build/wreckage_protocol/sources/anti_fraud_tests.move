@@ -6,8 +6,8 @@ use sui::test_scenario;
 use sui::clock;
 use world::killmail;
 use world::test_helpers;
-use wreckage_core::policy;
-use wreckage_core::pool_config;
+use wreckage_protocol::policy;
+use wreckage_protocol::pool_config;
 use wreckage_protocol::init as protocol_init;
 use wreckage_protocol::config::{Self, AdminCap, ProtocolConfig};
 use wreckage_protocol::registry::ClaimRegistry;
@@ -45,14 +45,14 @@ fun make_killmail(
     )
 }
 
-fun make_policy(ctx: &mut TxContext): wreckage_core::policy::InsurancePolicy {
+fun make_policy(ctx: &mut TxContext): wreckage_protocol::policy::InsurancePolicy {
     policy::create(
         tid(VICTIM_ID), COVERAGE, PREMIUM, 2, false, 0,
         POLICY_CREATED, POLICY_EXPIRES, ctx,
     )
 }
 
-fun make_policy_with_rider(ctx: &mut TxContext): wreckage_core::policy::InsurancePolicy {
+fun make_policy_with_rider(ctx: &mut TxContext): wreckage_protocol::policy::InsurancePolicy {
     policy::create(
         tid(VICTIM_ID), COVERAGE, PREMIUM, 2, true, 350_000_000,
         POLICY_CREATED, POLICY_EXPIRES, ctx,
