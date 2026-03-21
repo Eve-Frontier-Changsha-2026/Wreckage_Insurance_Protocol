@@ -17,7 +17,9 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(python3 -c \"import sys,json,base64; d=json.load\\(sys.stdin\\); print\\(base64.b64decode\\(d[''''content'''']\\).decode\\(\\)\\)\")",
       "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(d[''''name'''']\\) for d in data]\")",
-      "WebFetch(domain:docs.sui.io)"
+      "WebFetch(domain:docs.sui.io)",
+      "Bash(grep:*)",
+      "Bash(python3:*)"
     ]
   },
   "enabledPlugins": {

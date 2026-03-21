@@ -1,0 +1,39 @@
+{
+  "network": "testnet",
+  "deployedAt": "2026-03-21",
+  "deployer": "0x1509b5fdf09296b2cf749a710e36da06f5693ccd5b2144ad643b3a895abcbc4c",
+  "packageId": "0x053c5c2ae486c33e6e91d9169ea79385211d46373224953ad752ecf576786f77",
+  "modules": [
+    "access", "anti_fraud", "assembly", "auction", "character", "claims",
+    "config", "energy", "errors", "extension_freeze", "fuel", "gate",
+    "in_game_id", "init", "integration", "inventory", "killmail",
+    "killmail_registry", "location", "metadata", "network_node",
+    "object_registry", "policy", "pool_config", "registry", "rider",
+    "risk_pool", "salvage", "salvage_nft", "sig_verify", "status",
+    "storage_unit", "subrogation", "turret", "underwriting", "world"
+  ],
+  "objects": {
+    "upgradeCap": "0xa9d9767d5f982777b08541319019e5d36e4f5e6b7f8c442a2eaa4d68a0c0c935",
+    "protocolConfig": "0xaf987a7f3e744ed40d3c5fa8df827d9968bc305b78137d1b805bab4c65ba28bf",
+    "policyRegistry": "0x4b1ad0fb5d335aefaa47d46fff10e5fc30336f24138e104cb8fb26ab1f73d0bc",
+    "claimRegistry": "0xbe6e14a5b0028c84bd2af59ff96f41a5d4878783a4592341b0711df287fcab40",
+    "auctionRegistry": "0xba5a4846807889ff322983a4008069fb417b780f4cc94ec8f44e5d5a8216697d",
+    "adminACL": "0xb1681612e0a29aef8ae45b4723fe99fa6920db8616e518d9dfb8487c52178396",
+    "serverAddressRegistry": "0xb7dc0e6e19a8d1865890bc9aa1f4323e5f9fe82323e7df6f232fd739c0e270fa",
+    "governorCap": "0xf1fa832d89fb0b1030eb1cda777bc98c03623929f1be4302101b94b2b0ee14fe",
+    "objectRegistry": "0x57e3cd28a1e0d52ec94cfcd8610b8160c5302162233ed616edfbbd43e0e72a2a"
+  },
+  "worldObjects": {
+    "fuelConfig": "0x51b613865fd84e8815a687aef0162865dd39d95a8e588e5fb341f6fe21da65d5",
+    "gateConfig": "0x8d6bad3cdc3aa54e1362762e609e8d60fe5345544a0c013b3a562a0bae62f74c"
+  },
+  "gasUsed": "0.784 SUI",
+  "notes": "Single-package deployment: world + wreckage-core + wreckage-protocol merged via --with-unpublished-dependencies. World is a local fork with added accessor functions.",
+  "previousDeployments": {
+    "wreckage-core-standalone": {
+      "packageId": "0x213a962a013942bdaf0321201669b905733e7c49ef8ba927990f2fea87cd6f24",
+      "upgradeCap": "0x14f88995a58911cc98800bcb80c8fdaee8aca89b25ed550d70ede186da38b48d",
+      "note": "Abandoned — world dependency mismatch"
+    }
+  }
+}

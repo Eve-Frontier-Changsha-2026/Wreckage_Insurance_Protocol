@@ -3,6 +3,7 @@ module wreckage_protocol::init;
 
 use wreckage_protocol::config;
 use wreckage_protocol::registry;
+use wreckage_protocol::auction;
 
 /// Single init for the entire wreckage_protocol package.
 /// Creates all shared objects. Will be extended as modules are added.
@@ -31,7 +32,20 @@ fun init(ctx: &mut TxContext) {
     registry::create_and_share_claim_registry(ctx);
     registry::create_and_share_policy_registry(ctx);
 
-    // TODO(Task 12): AuctionRegistry
+    // AuctionRegistry → shared
+    auction::create_and_share_auction_registry(
+        wreckage_core::pool_config::new_auction_config(
+            259200,      // auction_duration = 72h
+            172800,      // buyout_duration = 48h
+            500,         // min_bid_increment_bps = 5%
+            7000,        // buyout_discount_bps = 70%
+            8000,        // revenue_pool_share_bps = 80%
+            600,         // anti_snipe_window = 10 min
+            600,         // anti_snipe_extension = 10 min
+            100_000_000, // min_opening_bid = 0.1 SUI
+        ),
+        ctx,
+    );
 }
 
 #[test_only]
