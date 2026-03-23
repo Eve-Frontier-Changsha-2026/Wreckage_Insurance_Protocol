@@ -64,6 +64,10 @@ const EAuctionNotEnded: vector<u8> = b"Auction has not ended yet";
 const EAuctionNotInBuyoutPhase: vector<u8> = b"Auction is not in buyout phase";
 #[error(code = 44)]
 const EBuyoutPaymentInsufficient: vector<u8> = b"Buyout payment is insufficient";
+#[error(code = 45)]
+const EAuctionAntiSnipeCapped: vector<u8> = b"Auction anti-snipe extension cap reached";
+#[error(code = 46)]
+const EAuctionPoolTierMismatch: vector<u8> = b"Auction pool tier does not match source";
 
 // === Registry Errors ===
 #[error(code = 50)]
@@ -76,6 +80,20 @@ const EVersionMismatch: vector<u8> = b"Object version mismatch";
 const EProtocolPaused: vector<u8> = b"Protocol is paused for this operation";
 #[error(code = 62)]
 const EInvalidConfig: vector<u8> = b"Invalid configuration parameter";
+#[error(code = 63)]
+const ECancellationNotAllowed: vector<u8> = b"Policy cannot be cancelled";
+
+// === SSU Extension Errors ===
+#[error(code = 65)]
+const ESSUNotOnline: vector<u8> = b"Smart Storage Unit is not online";
+
+// === Item Valuation Errors ===
+#[error(code = 70)]
+const EItemNotPriced: vector<u8> = b"Item type has no price set in valuation registry";
+#[error(code = 71)]
+const EInvalidLTV: vector<u8> = b"LTV ratio must be <= 10000 bps";
+#[error(code = 72)]
+const EBatchLengthMismatch: vector<u8> = b"Type IDs and prices vectors must have same length";
 
 // === Public Accessors (used by wreckage-protocol) ===
 public fun policy_not_active(): u64 { 0 }
@@ -105,7 +123,14 @@ public fun bid_too_low(): u64 { 41 }
 public fun auction_not_ended(): u64 { 42 }
 public fun auction_not_in_buyout(): u64 { 43 }
 public fun buyout_payment_insufficient(): u64 { 44 }
+public fun auction_anti_snipe_capped(): u64 { 45 }
+public fun auction_pool_tier_mismatch(): u64 { 46 }
 public fun character_already_insured(): u64 { 50 }
 public fun version_mismatch(): u64 { 60 }
 public fun protocol_paused(): u64 { 61 }
 public fun invalid_config(): u64 { 62 }
+public fun cancellation_not_allowed(): u64 { 63 }
+public fun ssu_not_online(): u64 { 65 }
+public fun item_not_priced(): u64 { 70 }
+public fun invalid_ltv(): u64 { 71 }
+public fun batch_length_mismatch(): u64 { 72 }

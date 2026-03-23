@@ -42,28 +42,101 @@
 
 ## Tests
 
-- **Total**: 86 tests all passing
-- wreckage-core modules (merged): 10 tests (policy 3, pool_config 4, rider 3)
-- config: 8, registry: 6, risk_pool: 11, anti_fraud: 12, underwriting: 10
+- **Total**: 94 tests all passing
+- wreckage-core modules (merged): 10 tests (policy 3, pool_config 7, rider 3)
+- config: 12, registry: 6, risk_pool: 11, anti_fraud: 12, underwriting: 11
 - claims: 6, salvage: 2, auction: 8, e2e: 13
 
 ## Security Status
 
 - **Audit date**: 2026-03-21 (Security Guard + Red Team, 10 rounds)
 - **CRITICAL (5)**: All fixed — wreckage-core `public fun` → `public(package)` via package merge
-- **HIGH (6)**: Documented, not yet fixed (auction hardcoded anti-snipe, claim reservation accounting, transfer_policy doesn't enforce transfer, expire_policy no pause check, public event emitters)
-- **SUSPICIOUS (3)**: renewal resets created_at, settle_auction no tier check, no anti-snipe cap
+- **HIGH (6)**: All fixed (2026-03-21)
+  - H-1: `place_bid` 改用 AuctionConfig（取代 hardcoded 600s）— 新增 `registry: &AuctionRegistry` 參數
+  - H-2: 加 `min_bid_increment_bps` 檢查（防 1 MIST bid griefing）
+  - H-3: InsurancePolicy 加 `pool_reserved: u64` 欄位，修正 per-policy reservation tracking
+  - H-4: `transfer_policy` 改 by-value，內部執行 `transfer::public_transfer`
+  - H-5: `expire_policy` 加 `config: &ProtocolConfig` 參數 + pause check
+  - H-6: 已修復（P0 時改為 `public(package)`）
+- **SUSPICIOUS (3)**: All fixed (2026-03-21)
+  - S-1: `set_renewal_data` 不再重設 `created_at`
+  - S-2: `settle_auction` + `buyout` 加 `assert!(pool.risk_tier() == auction.source_pool_tier)`
+  - S-3: anti-snipe extension cap at `started_at + auction_duration * 3`
+- **MEDIUM (7/8 fixed, 2026-03-22)**:
+  - M-1: `admin_set_pool_active` admin function added (config.move + risk_pool.move)
+  - M-2: `set_max_claims_per_policy` + `set_protocol_fee_bps` admin setters added (config.move)
+  - M-3: `subrogation_rate_bps <= 10000` validation added (pool_config.move)
+  - M-4: `anti_snipe_window <= auction_duration` + `anti_snipe_extension <= auction_duration` validation added (pool_config.move)
+  - M-5: Skipped — u8 safe (max_claims_per_policy also u8, no overflow)
+  - M-6: LPPosition 加 `pool_id: ID` field, withdraw 改用 pool_id check (risk_pool.move) ★ struct change
+  - M-7: Renewal grace period enforced: `now <= expires_at + renewal_waiting_period` (underwriting.move)
+  - M-8: AuctionRegistry 移除 config field, place_bid 改讀 ProtocolConfig (auction.move + init.move) ★ struct change
 - **Full report**: `tasks/security-audit-2026-03-21.md`
+
+### Changed Function Signatures (P1-P2 fixes)
+
+| Function | Before | After |
+|----------|--------|-------|
+| `place_bid` | `(auction, bid_coin, clock, ctx)` | `(auction, **registry**, bid_coin, clock, ctx)` |
+| `transfer_policy` | `(&mut policy, config, recipient, clock, ctx)` | `(**policy**, config, recipient, clock, ctx)` — by value |
+| `expire_policy` | `(policy, policy_reg, pool, clock)` | `(policy, policy_reg, pool, **config**, clock)` |
+| `set_renewal_data` | `(policy, premium, expires, created)` | `(policy, premium, expires)` — no created_at |
+
+### Changed Function Signatures (MEDIUM fixes)
+
+| Function | Before | After |
+|----------|--------|-------|
+| `place_bid` | `(auction, **config: &ProtocolConfig**, bid_coin, clock, ctx)` | was `registry: &AuctionRegistry` → now `config: &ProtocolConfig` |
+| `create_and_share_auction_registry` | `(config: AuctionConfig, ctx)` | `(ctx)` — no config param |
+
+### Changed Structs (MEDIUM fixes)
+
+| Struct | Change |
+|--------|--------|
+| `AuctionRegistry` | Removed `config: AuctionConfig` field |
+| `LPPosition` | Added `pool_id: ID` field |
+
+### New Admin Functions (MEDIUM fixes)
+
+| Function | Module | Purpose |
+|----------|--------|---------|
+| `admin_set_pool_active` | config.move | M-1: Activate/deactivate RiskPool |
+| `set_max_claims_per_policy` | config.move | M-2: Update max claims |
+| `set_protocol_fee_bps` | config.move | M-2: Update protocol fee |
+
+### New Struct Fields (P1-P2 fixes)
+
+| Struct | Field | Type | Purpose |
+|--------|-------|------|---------|
+| InsurancePolicy | `pool_reserved` | `u64` | Per-policy reservation tracking in RiskPool |
+
+## Spec Compliance Fixes (2026-03-23)
+
+### Fix 1: `emergency_withdraw` (spec §4.4 — HIGH)
+- **問題**: Spec 要求 "LP withdrawals remain open even when paused"，但原始實作沒有 emergency path
+- **修復**: `risk_pool.move` 新增 `emergency_withdraw` public function
+- **設計**: 與 `withdraw` 完全相同邏輯，但跳過 `is_active` 檢查
+- **保留防護**: lock period (7 days) + withdraw cap (25%) + dynamic fee + reservation invariant
+- **Red Team**: 通過 — flash loan, drain attack 均被 lock period / invariant 阻擋
+
+### Fix 2: Admin Config Hard Limit Validation (spec §11.3 — MEDIUM)
+- **問題**: `add_pool_tier` / `update_pool_config` 沒有驗證 ProtocolConfig hard limits
+- **修復**: `config.move` 新增 `validate_pool_config_limits()` private function
+- **檢查**: `deductible_bps >= min_deductible_bps`, `base_premium_rate >= min_premium_rate_bps`, `max_coverage <= max_coverage_limit`
+- **已知 trade-off**: 修改 ProtocolConfig limits 不會 retroactively 驗證既有 pool configs（gas 效率考量，MVP 可接受）
+
+### Re-audit (2026-03-23)
+- **Move Code Quality**: 38/50+ rules passed, 8 style improvements (non-blocking)
+- **Security Guard**: Clean — no secrets, no .env exposure
+- **Red Team (10 rounds)**: 0 exploits, 2 suspicious (NEGLIGIBLE/LOW), 48 defended, 70% confidence
 
 ## Known Risks / Limitations
 
 1. **Single-package deployment**: world + wreckage-core + wreckage-protocol merged into one package. Cannot independently upgrade world or core. Acceptable for hackathon MVP.
 2. **World contracts fork**: Local fork of `evefrontier/world-contracts` with added accessor functions. If upstream changes, fork needs manual sync.
 3. **NCB off-by-one**: Claim resets streak to 0, next renewal increments to 1. Minor, MVP acceptable.
-4. **Auction anti-snipe hardcoded**: 600s window/extension, ignores AuctionConfig values. (H-1, H-2)
-5. **Claim reservation tracking**: Subsequent claims on same policy add reservations without releasing prior. (H-3)
-6. **No pool deactivation**: Admin cannot deactivate a RiskPool. (M-1)
-7. **LPPosition uses tier not pool ID**: Cross-pool withdraw theoretically possible if same tier. (M-6)
+4. **Retroactive config validation**: Admin 改 ProtocolConfig hard limits 後，既有 pool configs 不會自動驗證。需手動 update_pool_config 觸發。
+5. **Needs redeploy**: 新增 `emergency_withdraw` 函式需重新部署到 testnet（無 struct 變更，可 upgrade）
 
 ## Architecture Decisions
 

@@ -32,6 +32,7 @@ public struct RiskPool has key {
 
 public struct LPPosition has key, store {
     id: UID,
+    pool_id: ID,
     pool_risk_tier: u8,
     shares: u64,
     deposited_at: u64,
@@ -120,6 +121,7 @@ public fun deposit(
 
     let position = LPPosition {
         id: object::new(ctx),
+        pool_id: object::id(pool),
         pool_risk_tier: pool.config.risk_tier(),
         shares,
         deposited_at: clock.timestamp_ms() / 1000,
@@ -144,7 +146,8 @@ public fun withdraw(
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<SUI> {
-    assert!(position.pool_risk_tier == pool.config.risk_tier(), errors::wrong_pool());
+    // M-6: Check pool_id instead of tier to prevent cross-pool withdraw
+    assert!(position.pool_id == object::id(pool), errors::wrong_pool());
     assert!(shares_to_burn > 0 && shares_to_burn <= position.shares, 0);
 
     // Check lock period
@@ -238,7 +241,13 @@ public(package) fun receive_auction_revenue(pool: &mut RiskPool, revenue: Balanc
     pool.total_liquidity.join(revenue);
 }
 
+// === Pool Mutation (package-visible, called from config.move admin functions) ===
+public(package) fun set_active(pool: &mut RiskPool, active: bool) {
+    pool.is_active = active;
+}
+
 // === LPPosition Accessors ===
+public fun lp_pool_id(pos: &LPPosition): ID { pos.pool_id }
 public fun lp_pool_tier(pos: &LPPosition): u8 { pos.pool_risk_tier }
 public fun lp_shares(pos: &LPPosition): u64 { pos.shares }
 public fun lp_deposited_at(pos: &LPPosition): u64 { pos.deposited_at }
@@ -248,6 +257,66 @@ public fun destroy_empty_position(pos: LPPosition) {
     assert!(pos.shares == 0, 0);
     let LPPosition { id, .. } = pos;
     id.delete();
+}
+
+// === Emergency Withdraw (available even when pool is deactivated) ===
+/// LP can always withdraw even if pool is_active == false.
+/// Same logic as withdraw but no is_active check — spec §4.4 guarantee.
+public fun emergency_withdraw(
+    pool: &mut RiskPool,
+    position: &mut LPPosition,
+    shares_to_burn: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Coin<SUI> {
+    assert!(position.pool_id == object::id(pool), errors::wrong_pool());
+    assert!(shares_to_burn > 0 && shares_to_burn <= position.shares, 0);
+
+    // Lock period still applies (prevents flash-loan style attacks)
+    let now = clock.timestamp_ms() / 1000;
+    assert!(now >= position.deposited_at + LP_LOCK_PERIOD, errors::lp_lock_period_not_elapsed());
+
+    let total_liq = total_liquidity_value(pool);
+    let gross_amount = (((shares_to_burn as u128) * (total_liq as u128) / (pool.total_shares as u128)) as u64);
+
+    // Withdraw cap still applies
+    let avail = available_liquidity(pool);
+    let max_withdraw = avail * LP_WITHDRAW_CAP_BPS / 10000;
+    assert!(gross_amount <= max_withdraw, errors::lp_withdraw_cap_exceeded());
+
+    // Dynamic withdrawal fee
+    let util = utilization_bps(pool);
+    let fee = if (util > UTILIZATION_FEE_THRESHOLD_BPS) {
+        let fee_rate_bps = (util - UTILIZATION_FEE_THRESHOLD_BPS) * 2;
+        (((gross_amount as u128) * (fee_rate_bps as u128) / 10000) as u64)
+    } else {
+        0
+    };
+    let net_amount = gross_amount - fee;
+
+    let net_amount = if (net_amount > pool.total_liquidity.value()) {
+        pool.total_liquidity.value()
+    } else {
+        net_amount
+    };
+
+    position.shares = position.shares - shares_to_burn;
+    pool.total_shares = pool.total_shares - shares_to_burn;
+
+    assert!(pool.total_liquidity.value() - net_amount >= pool.reserved_amount,
+        errors::pool_insufficient_liquidity());
+
+    let withdraw_balance = pool.total_liquidity.split(net_amount);
+
+    event::emit(LPWithdrawEvent {
+        pool_tier: pool.config.risk_tier(),
+        withdrawer: ctx.sender(),
+        amount: net_amount,
+        shares_burned: shares_to_burn,
+        fee,
+    });
+
+    coin::from_balance(withdraw_balance, ctx)
 }
 
 // === Version Check ===

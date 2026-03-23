@@ -70,6 +70,8 @@ public fun new_pool_config(
     // NCB cap validation (u128 to prevent overflow)
     assert!((ncb_discount_bps as u128) * (max_ncb_streak as u128) <= (max_ncb_total_discount_bps as u128), 0);
     assert!(max_ncb_total_discount_bps < MAX_BPS, 0);
+    // M-3: subrogation_rate_bps must be <= 10000
+    assert!(subrogation_rate_bps <= MAX_BPS, 0);
 
     PoolConfig {
         risk_tier,
@@ -106,6 +108,9 @@ public fun new_auction_config(
     assert!(min_bid_increment_bps > 0 && min_bid_increment_bps < MAX_BPS, 0);
     assert!(buyout_discount_bps > 0 && buyout_discount_bps <= MAX_BPS, 0);
     assert!(revenue_pool_share_bps <= MAX_BPS, 0);
+    // M-4: anti_snipe_window must be <= auction_duration
+    assert!(anti_snipe_window <= auction_duration, 0);
+    assert!(anti_snipe_extension <= auction_duration, 0);
 
     AuctionConfig {
         auction_duration,

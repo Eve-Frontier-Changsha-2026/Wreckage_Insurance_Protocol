@@ -1,8 +1,9 @@
 {
   "network": "testnet",
-  "deployedAt": "2026-03-21",
+  "deployedAt": "2026-03-23",
   "deployer": "0x1509b5fdf09296b2cf749a710e36da06f5693ccd5b2144ad643b3a895abcbc4c",
-  "packageId": "0x053c5c2ae486c33e6e91d9169ea79385211d46373224953ad752ecf576786f77",
+  "packageId": "0xc4a0468d35e9c0e8e85201a00897f3ca6ac69cec3e4ee7721dc96a7a4a572bf6",
+  "transactionDigest": "8wYBpga21mabufsaQKpRkKewyLA46AJX858KBkJGRopS",
   "modules": [
     "access", "anti_fraud", "assembly", "auction", "character", "claims",
     "config", "energy", "errors", "extension_freeze", "fuel", "gate",
@@ -13,23 +14,47 @@
     "storage_unit", "subrogation", "turret", "underwriting", "world"
   ],
   "objects": {
-    "upgradeCap": "0xa9d9767d5f982777b08541319019e5d36e4f5e6b7f8c442a2eaa4d68a0c0c935",
-    "protocolConfig": "0xaf987a7f3e744ed40d3c5fa8df827d9968bc305b78137d1b805bab4c65ba28bf",
-    "policyRegistry": "0x4b1ad0fb5d335aefaa47d46fff10e5fc30336f24138e104cb8fb26ab1f73d0bc",
-    "claimRegistry": "0xbe6e14a5b0028c84bd2af59ff96f41a5d4878783a4592341b0711df287fcab40",
-    "auctionRegistry": "0xba5a4846807889ff322983a4008069fb417b780f4cc94ec8f44e5d5a8216697d",
-    "adminACL": "0xb1681612e0a29aef8ae45b4723fe99fa6920db8616e518d9dfb8487c52178396",
-    "serverAddressRegistry": "0xb7dc0e6e19a8d1865890bc9aa1f4323e5f9fe82323e7df6f232fd739c0e270fa",
-    "governorCap": "0xf1fa832d89fb0b1030eb1cda777bc98c03623929f1be4302101b94b2b0ee14fe",
-    "objectRegistry": "0x57e3cd28a1e0d52ec94cfcd8610b8160c5302162233ed616edfbbd43e0e72a2a"
+    "upgradeCap": "0x356317d241cc6ae41a1ee865ec91c010e1cdc65b29a791442cdb335767441c96",
+    "adminCap": "0xbdf8b7ae6c9167ef51ea6a37d9580167bc2d9ebb7a6cbce749f98be1b3396fd3",
+    "protocolConfig": "0x92cfd541600b883ba0a2532c69d77c939114f620d176bbcb0fbb0528e398a3da",
+    "policyRegistry": "0xdab997bfd2c671e40c59c096e5c8b580018c791db9b76db50f20463f7efc4b7b",
+    "claimRegistry": "0xdffef875036b20bb98f2ab9793734411fce69b634dc95adf6aa826640edd44b6",
+    "auctionRegistry": "0x22662b09a97dd23567eb77cf1cfee854e47c868e2c04acefa745bdf784f5f0a0",
+    "adminACL": "0x291cc3366e5e31584ede0494d84aeda2bf8f09bc37a4c91225a4a8caa561aa91",
+    "serverAddressRegistry": "0x98807e5f835591d13a9a3306c4b53cea39c48c91d52e1c7275b9cc7cb432142e",
+    "governorCap": "0x3ded4729d56c8bd231a406257aff0b5d24176856b0b9863f3d0bf6f0610b8ee0"
   },
   "worldObjects": {
-    "fuelConfig": "0x51b613865fd84e8815a687aef0162865dd39d95a8e588e5fb341f6fe21da65d5",
-    "gateConfig": "0x8d6bad3cdc3aa54e1362762e609e8d60fe5345544a0c013b3a562a0bae62f74c"
+    "fuelConfig": "0x62b106f29a6d04cb31b8c7ad942cefc0963cbcb8ac9806875404957cbec6ce0f",
+    "gateConfig": "0x471b140d07665287981b89f2af3ba4bd57ca4190d0a275d906f5c5a1b61dbf2e",
+    "killmailRegistry": "0xb016b41129bf82f938da22419bd71a69427c6f723850379621e7f8539441193a",
+    "locationRegistry": "0x70f6209e33abfcbbf76ee4f31267be78a5eff6b6faf354891d1ba8a2a47643a3",
+    "energyConfig": "0x2e9456d0ecbd194166ef13b8678c476955ddacd6fff59295988ab96e2add5e1b",
+    "objectRegistry": "0xfffdca9e0030e3876befe2d754fc9312728309a96abda1b28e06dedf7e8076a5"
   },
-  "gasUsed": "0.784 SUI",
-  "notes": "Single-package deployment: world + wreckage-core + wreckage-protocol merged via --with-unpublished-dependencies. World is a local fork with added accessor functions.",
+  "gasUsed": "0.806 SUI",
+  "notes": "Redeployment v5: cancel_policy, protocol fee split, NCB off-by-one fix. Fresh publish required (InsurancePolicy struct change — claims_at_last_renewal field added).",
   "previousDeployments": {
+    "v4-2026-03-23": {
+      "packageId": "0x325012f5213ee7398ac7ec950291ba1013212c38a772387b3d0473a3ad75a1f7",
+      "upgradeCap": "0x2c7802ba9110d379b1a5c8377114d1a770f8f7e5871924eb536a6bc51abc721c",
+      "note": "Pre-gap-completion, missing cancel_policy/protocol fee/NCB fix"
+    },
+    "v3-2026-03-22": {
+      "packageId": "0x6de33f6a03b5ac49929eca6482286d9ff745377c0e8f4962f20272ffa2caa645",
+      "upgradeCap": "0x1b041ffc608dd44751fa41e5ada45dd5d7997d35ee8d02b5463b6eea72e92a59",
+      "note": "Pre-spec-compliance deployment, missing emergency_withdraw and validate_pool_config_limits"
+    },
+    "v2-2026-03-22": {
+      "packageId": "0x23452a23dbe184d0d4e4713c531745b6ddaf3b9143ef38a4e6708bb8553f739e",
+      "upgradeCap": "0x8eb6096f3337e072e25420d80c4a8b4e8e6d4ee34eb476a5daea0326568380eb",
+      "note": "Pre-MEDIUM-fix deployment, struct layout incompatible (LPPosition, AuctionRegistry)"
+    },
+    "v1-2026-03-21": {
+      "packageId": "0x053c5c2ae486c33e6e91d9169ea79385211d46373224953ad752ecf576786f77",
+      "upgradeCap": "0xa9d9767d5f982777b08541319019e5d36e4f5e6b7f8c442a2eaa4d68a0c0c935",
+      "note": "Pre-security-fix deployment, struct layout incompatible"
+    },
     "wreckage-core-standalone": {
       "packageId": "0x213a962a013942bdaf0321201669b905733e7c49ef8ba927990f2fea87cd6f24",
       "upgradeCap": "0x14f88995a58911cc98800bcb80c8fdaee8aca89b25ed550d70ede186da38b48d",

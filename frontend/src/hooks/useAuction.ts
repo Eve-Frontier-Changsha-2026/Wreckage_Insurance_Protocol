@@ -4,7 +4,7 @@ import {
 } from '@mysten/dapp-kit-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SHARED_OBJECTS } from '../lib/contracts';
-import { buildPlaceBid, buildSettleAuction, buildBuyout } from '../lib/ptb/auction';
+import { buildPlaceBid, buildSettleAuction, buildBuyout, buildDestroyUnsold } from '../lib/ptb/auction';
 import { useState, useCallback } from 'react';
 
 export function useAuctionDetail(auctionId: string | undefined) {
@@ -120,6 +120,42 @@ export function useBuyout() {
       setError(null);
       try {
         const tx = buildBuyout(args);
+        const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
+        if (result.FailedTransaction) {
+          throw new Error(
+            result.FailedTransaction.status.error?.message ?? 'Transaction failed',
+          );
+        }
+        await client.waitForTransaction({ digest: result.Transaction.digest });
+        await queryClient.invalidateQueries({ queryKey: ['auction'] });
+        await queryClient.invalidateQueries({ queryKey: ['auctionRegistry'] });
+        return result.Transaction.digest;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Unknown error');
+        throw e;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [dAppKit, client, queryClient],
+  );
+
+  return { execute, isPending, error };
+}
+
+export function useDestroyUnsold() {
+  const dAppKit = useDAppKit();
+  const client = useCurrentClient();
+  const queryClient = useQueryClient();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const execute = useCallback(
+    async (args: { auctionId: string }) => {
+      setIsPending(true);
+      setError(null);
+      try {
+        const tx = buildDestroyUnsold(args);
         const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
         if (result.FailedTransaction) {
           throw new Error(

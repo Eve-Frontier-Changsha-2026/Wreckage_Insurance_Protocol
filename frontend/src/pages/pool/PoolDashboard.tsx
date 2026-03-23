@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useCurrentAccount, ConnectButton } from '@mysten/dapp-kit-react';
+import { useCurrentAccount } from '@mysten/dapp-kit-react';
+import { ConnectButton } from '@mysten/dapp-kit-react/ui';
 import { useRiskPoolDetail, useOwnedLPPositions } from '../../hooks/useRiskPool';
 import PoolStats from '../../components/pool/PoolStats';
 import LPPositionCard from '../../components/pool/LPPositionCard';

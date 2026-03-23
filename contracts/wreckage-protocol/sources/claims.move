@@ -75,13 +75,20 @@ public fun submit_claim(
     let decay_amount = coverage - coverage_after_decay;
     let deductible_amount = coverage_after_decay - payout;
 
-    // Manage reservation: release full coverage on first claim, then
-    // temporarily reserve payout so pay_claim can release it atomically
-    if (policy.claim_count() == 0) {
-        risk_pool::release_reservation(pool, policy.coverage_amount());
-    };
+    // Manage reservation: release current per-policy reservation, reserve payout,
+    // pay claim, then re-reserve remaining potential liability
+    let current_reserved = policy.pool_reserved();
+    risk_pool::release_reservation(pool, current_reserved);
     risk_pool::reserve_coverage(pool, payout);
     let payout_coin = risk_pool::pay_claim(pool, payout, ctx);
+
+    // Re-reserve remaining liability (conservative: coverage minus cumulative payouts)
+    // After pay_claim, reservation for this claim is released. Re-reserve what's left.
+    let new_reserved = if (current_reserved > payout) { current_reserved - payout } else { 0 };
+    if (new_reserved > 0) {
+        risk_pool::reserve_coverage(pool, new_reserved);
+    };
+    policy.set_pool_reserved(new_reserved);
 
     // Update policy state
     policy.increment_claim_count();
@@ -178,11 +185,16 @@ public fun submit_self_destruct_claim(
     let deductible_amount = coverage_after_decay - base_payout;
 
     // Manage reservation: same pattern as standard claim
-    if (policy.claim_count() == 0) {
-        risk_pool::release_reservation(pool, policy.coverage_amount());
-    };
+    let current_reserved = policy.pool_reserved();
+    risk_pool::release_reservation(pool, current_reserved);
     risk_pool::reserve_coverage(pool, payout);
     let payout_coin = risk_pool::pay_claim(pool, payout, ctx);
+
+    let new_reserved = if (current_reserved > payout) { current_reserved - payout } else { 0 };
+    if (new_reserved > 0) {
+        risk_pool::reserve_coverage(pool, new_reserved);
+    };
+    policy.set_pool_reserved(new_reserved);
 
     // Update policy state
     policy.increment_claim_count();

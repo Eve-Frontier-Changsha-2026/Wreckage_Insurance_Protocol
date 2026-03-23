@@ -6,6 +6,7 @@ use sui::test_scenario;
 use wreckage_protocol::init as protocol_init;
 use wreckage_protocol::config::{Self, AdminCap, ProtocolConfig};
 use wreckage_protocol::pool_config;
+use wreckage_protocol::risk_pool::RiskPool;
 
 #[test]
 fun test_init_creates_admin_cap_and_config() {
@@ -178,5 +179,98 @@ fun test_assert_version_passes() {
     let cfg = scenario.take_shared<ProtocolConfig>();
     config::assert_version(&cfg); // should not abort
     test_scenario::return_shared(cfg);
+    scenario.end();
+}
+
+// M-2: Admin can set max_claims_per_policy
+#[test]
+fun test_set_max_claims_per_policy() {
+    let admin = @0xAD;
+    let mut scenario = test_scenario::begin(admin);
+    protocol_init::init_for_testing(scenario.ctx());
+    scenario.next_tx(admin);
+
+    let cap = scenario.take_from_sender<AdminCap>();
+    let mut cfg = scenario.take_shared<ProtocolConfig>();
+
+    assert!(config::max_claims_per_policy(&cfg) == 5);
+    config::set_max_claims_per_policy(&cap, &mut cfg, 10);
+    assert!(config::max_claims_per_policy(&cfg) == 10);
+
+    test_scenario::return_shared(cfg);
+    scenario.return_to_sender(cap);
+    scenario.end();
+}
+
+// M-2: Admin can set protocol_fee_bps
+#[test]
+fun test_set_protocol_fee_bps() {
+    let admin = @0xAD;
+    let mut scenario = test_scenario::begin(admin);
+    protocol_init::init_for_testing(scenario.ctx());
+    scenario.next_tx(admin);
+
+    let cap = scenario.take_from_sender<AdminCap>();
+    let mut cfg = scenario.take_shared<ProtocolConfig>();
+
+    assert!(config::protocol_fee_bps(&cfg) == 2000);
+    config::set_protocol_fee_bps(&cap, &mut cfg, 1500);
+    assert!(config::protocol_fee_bps(&cfg) == 1500);
+
+    test_scenario::return_shared(cfg);
+    scenario.return_to_sender(cap);
+    scenario.end();
+}
+
+// M-2: protocol_fee_bps > 10000 rejected
+#[test]
+#[expected_failure]
+fun test_set_protocol_fee_bps_too_high() {
+    let admin = @0xAD;
+    let mut scenario = test_scenario::begin(admin);
+    protocol_init::init_for_testing(scenario.ctx());
+    scenario.next_tx(admin);
+
+    let cap = scenario.take_from_sender<AdminCap>();
+    let mut cfg = scenario.take_shared<ProtocolConfig>();
+
+    config::set_protocol_fee_bps(&cap, &mut cfg, 10001); // > 10000
+
+    test_scenario::return_shared(cfg);
+    scenario.return_to_sender(cap);
+    scenario.end();
+}
+
+// M-1: Admin can deactivate/reactivate a pool
+#[test]
+fun test_admin_deactivate_pool() {
+    let admin = @0xAD;
+    let mut scenario = test_scenario::begin(admin);
+    protocol_init::init_for_testing(scenario.ctx());
+    scenario.next_tx(admin);
+
+    let cap = scenario.take_from_sender<AdminCap>();
+    let mut cfg = scenario.take_shared<ProtocolConfig>();
+    let pool_cfg = pool_config::test_pool_config();
+    config::add_pool_tier(&cap, &mut cfg, pool_cfg);
+    config::admin_create_pool(&cap, &cfg, pool_cfg, scenario.ctx());
+    test_scenario::return_shared(cfg);
+    scenario.return_to_sender(cap);
+    scenario.next_tx(admin);
+
+    let cap = scenario.take_from_sender<AdminCap>();
+    let mut pool = scenario.take_shared<RiskPool>();
+    assert!(wreckage_protocol::risk_pool::is_active(&pool));
+
+    // Deactivate
+    config::admin_set_pool_active(&cap, &mut pool, false);
+    assert!(!wreckage_protocol::risk_pool::is_active(&pool));
+
+    // Reactivate
+    config::admin_set_pool_active(&cap, &mut pool, true);
+    assert!(wreckage_protocol::risk_pool::is_active(&pool));
+
+    test_scenario::return_shared(pool);
+    scenario.return_to_sender(cap);
     scenario.end();
 }

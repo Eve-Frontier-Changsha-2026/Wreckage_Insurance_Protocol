@@ -1,15 +1,15 @@
 export const PACKAGE_ID =
-  '0x053c5c2ae486c33e6e91d9169ea79385211d46373224953ad752ecf576786f77';
+  '0xc4a0468d35e9c0e8e85201a00897f3ca6ac69cec3e4ee7721dc96a7a4a572bf6';
 
 export const SHARED_OBJECTS = {
   protocolConfig:
-    '0xaf987a7f3e744ed40d3c5fa8df827d9968bc305b78137d1b805bab4c65ba28bf',
+    '0x92cfd541600b883ba0a2532c69d77c939114f620d176bbcb0fbb0528e398a3da',
   policyRegistry:
-    '0x4b1ad0fb5d335aefaa47d46fff10e5fc30336f24138e104cb8fb26ab1f73d0bc',
+    '0xdab997bfd2c671e40c59c096e5c8b580018c791db9b76db50f20463f7efc4b7b',
   claimRegistry:
-    '0xbe6e14a5b0028c84bd2af59ff96f41a5d4878783a4592341b0711df287fcab40',
+    '0xdffef875036b20bb98f2ab9793734411fce69b634dc95adf6aa826640edd44b6',
   auctionRegistry:
-    '0xba5a4846807889ff322983a4008069fb417b780f4cc94ec8f44e5d5a8216697d',
+    '0x22662b09a97dd23567eb77cf1cfee854e47c868e2c04acefa745bdf784f5f0a0',
 } as const;
 
 export const MODULE = {

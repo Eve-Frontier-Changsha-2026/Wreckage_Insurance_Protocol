@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
-import { useAuctionDetail, useSettleAuction, useBuyout } from '../../hooks/useAuction';
+import { useAuctionDetail, useSettleAuction, useBuyout, useDestroyUnsold } from '../../hooks/useAuction';
 import BidForm from '../../components/auction/BidForm';
 import CountdownTimer from '../../components/auction/CountdownTimer';
 
@@ -36,6 +36,8 @@ export default function AuctionDetailPage() {
   const { data: auctionObj, isLoading } = useAuctionDetail(auctionId);
   const { execute: settle, isPending: isSettling } = useSettleAuction();
   const { execute: buyout, isPending: isBuyingOut, error: buyoutError } = useBuyout();
+
+  const { execute: destroy, isPending: isDestroying, error: destroyError } = useDestroyUnsold();
 
   const [poolId, setPoolId] = useState('');
   const [buyoutSui, setBuyoutSui] = useState('');
@@ -100,6 +102,16 @@ export default function AuctionDetailPage() {
       setTxHash(digest ?? null);
     } catch (e) {
       setTxError(e instanceof Error ? e.message : 'Settle failed');
+    }
+  }
+
+  async function handleDestroy() {
+    setTxError(null);
+    try {
+      const digest = await destroy({ auctionId: auction.id });
+      setTxHash(digest ?? null);
+    } catch (e) {
+      setTxError(e instanceof Error ? e.message : 'Destroy failed');
     }
   }
 
@@ -242,13 +254,25 @@ export default function AuctionDetailPage() {
         </div>
       )}
 
-      {(auction.status === 'settled' || auction.status === 'unsold') && (
+      {auction.status === 'settled' && (
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 text-center">
           <p className="text-gray-400">
-            {auction.status === 'settled'
-              ? 'Auction has been settled. Winner: ' + (auction.highestBidder ? truncate(auction.highestBidder) : 'N/A')
-              : 'Auction ended with no bids.'}
+            Auction settled. Winner: {auction.highestBidder ? truncate(auction.highestBidder) : 'N/A'}
           </p>
+        </div>
+      )}
+
+      {auction.status === 'unsold' && (
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-3">
+          <p className="text-gray-400 text-center">Auction ended with no bids.</p>
+          <button
+            onClick={handleDestroy}
+            disabled={isDestroying}
+            className="w-full py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-semibold rounded transition-colors"
+          >
+            {isDestroying ? 'Destroying...' : 'Destroy Unsold NFT'}
+          </button>
+          {destroyError && <p className="text-red-400 text-sm text-center">{destroyError}</p>}
         </div>
       )}
     </div>

@@ -8,6 +8,9 @@ import { PACKAGE_ID } from '../lib/contracts';
 import {
   buildPurchasePolicy,
   buildRenewPolicy,
+  buildTransferPolicy,
+  buildExpirePolicy,
+  buildCancelPolicy,
 } from '../lib/ptb/insure';
 import { useState, useCallback } from 'react';
 
@@ -104,6 +107,114 @@ export function useRenewPolicy() {
       setError(null);
       try {
         const tx = buildRenewPolicy(args);
+        const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
+        if (result.FailedTransaction) {
+          throw new Error(
+            result.FailedTransaction.status.error?.message ?? 'Transaction failed',
+          );
+        }
+        await client.waitForTransaction({ digest: result.Transaction.digest });
+        await queryClient.invalidateQueries({ queryKey: ['ownedPolicies'] });
+        await queryClient.invalidateQueries({ queryKey: ['policyDetail'] });
+        return result.Transaction.digest;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Unknown error');
+        throw e;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [dAppKit, client, queryClient],
+  );
+
+  return { execute, isPending, error };
+}
+
+export function useCancelPolicy() {
+  const dAppKit = useDAppKit();
+  const client = useCurrentClient();
+  const queryClient = useQueryClient();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const execute = useCallback(
+    async (args: { policyId: string; poolId: string }) => {
+      setIsPending(true);
+      setError(null);
+      try {
+        const tx = buildCancelPolicy(args);
+        const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
+        if (result.FailedTransaction) {
+          throw new Error(
+            result.FailedTransaction.status.error?.message ?? 'Transaction failed',
+          );
+        }
+        await client.waitForTransaction({ digest: result.Transaction.digest });
+        await queryClient.invalidateQueries({ queryKey: ['ownedPolicies'] });
+        await queryClient.invalidateQueries({ queryKey: ['policyDetail'] });
+        return result.Transaction.digest;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Unknown error');
+        throw e;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [dAppKit, client, queryClient],
+  );
+
+  return { execute, isPending, error };
+}
+
+export function useTransferPolicy() {
+  const dAppKit = useDAppKit();
+  const client = useCurrentClient();
+  const queryClient = useQueryClient();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const execute = useCallback(
+    async (args: { policyId: string; recipient: string }) => {
+      setIsPending(true);
+      setError(null);
+      try {
+        const tx = buildTransferPolicy(args);
+        const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
+        if (result.FailedTransaction) {
+          throw new Error(
+            result.FailedTransaction.status.error?.message ?? 'Transaction failed',
+          );
+        }
+        await client.waitForTransaction({ digest: result.Transaction.digest });
+        await queryClient.invalidateQueries({ queryKey: ['ownedPolicies'] });
+        await queryClient.invalidateQueries({ queryKey: ['policyDetail'] });
+        return result.Transaction.digest;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Unknown error');
+        throw e;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [dAppKit, client, queryClient],
+  );
+
+  return { execute, isPending, error };
+}
+
+export function useExpirePolicy() {
+  const dAppKit = useDAppKit();
+  const client = useCurrentClient();
+  const queryClient = useQueryClient();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const execute = useCallback(
+    async (args: { policyId: string; poolId: string }) => {
+      setIsPending(true);
+      setError(null);
+      try {
+        const tx = buildExpirePolicy(args);
         const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
         if (result.FailedTransaction) {
           throw new Error(

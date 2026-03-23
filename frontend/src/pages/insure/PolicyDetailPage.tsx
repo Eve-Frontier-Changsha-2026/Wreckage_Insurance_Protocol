@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { usePolicyDetail, useRenewPolicy } from '../../hooks/useInsurancePolicy';
+import { usePolicyDetail, useRenewPolicy, useCancelPolicy, useTransferPolicy, useExpirePolicy } from '../../hooks/useInsurancePolicy';
 import type { RiskTier } from '../../lib/types';
 import { TIER_NAMES } from '../../lib/types';
 import { TIER_RATES } from '../../components/policy/RiskTierSelector';
@@ -21,6 +21,7 @@ const STATUS_BADGE: Record<string, string> = {
   active: 'bg-emerald-500/20 text-emerald-400',
   expired: 'bg-gray-500/20 text-gray-400',
   claimed: 'bg-blue-500/20 text-blue-400',
+  cancelled: 'bg-orange-500/20 text-orange-400',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,9 +48,15 @@ export default function PolicyDetailPage() {
   const { data: policyObj, isLoading, error } = usePolicyDetail(policyId);
   const { execute: renew, isPending: renewPending, error: renewError } = useRenewPolicy();
 
+  const { execute: cancel, isPending: cancelPending, error: cancelError } = useCancelPolicy();
+  const { execute: transferPolicy, isPending: transferPending, error: transferError } = useTransferPolicy();
+  const { execute: expire, isPending: expirePending, error: expireError } = useExpirePolicy();
+
   const [renewPoolId, setRenewPoolId] = useState('');
   const [renewPaymentSui, setRenewPaymentSui] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [actionPoolId, setActionPoolId] = useState('');
+  const [transferRecipient, setTransferRecipient] = useState('');
 
   if (isLoading) {
     return (
@@ -78,18 +85,18 @@ export default function PolicyDetailPage() {
   const objectId: string = (policyObj as { objectId?: string; id?: string }).objectId ?? policyId ?? '';
 
   // Extract fields with fallbacks for snake_case and camelCase
-  const tier = Number(fields?.tier ?? 0) as RiskTier;
+  const tier = Number(fields?.risk_tier ?? fields?.tier ?? 0) as RiskTier;
   const coverage = Number(fields?.coverage_amount ?? fields?.coverageAmount ?? 0);
   const premiumPaid = Number(fields?.premium_paid ?? fields?.premiumPaid ?? 0);
-  const startEpoch = Number(fields?.start_epoch ?? fields?.startEpoch ?? 0);
-  const endEpoch = Number(fields?.end_epoch ?? fields?.endEpoch ?? 0);
-  const ncbStreak = Number(fields?.ncb_streak ?? fields?.ncbStreak ?? 0);
+  const createdAt = Number(fields?.created_at ?? fields?.createdAt ?? 0);
+  const expiresAt = Number(fields?.expires_at ?? fields?.expiresAt ?? 0);
+  const ncbStreak = Number(fields?.no_claim_streak ?? fields?.ncb_streak ?? 0);
   const claimCount = Number(fields?.claim_count ?? fields?.claimCount ?? 0);
   const hasSdRider = Boolean(fields?.has_self_destruct_rider ?? fields?.hasSelfDestructRider ?? false);
-  const owner: string = fields?.owner ?? '';
-  const characterId: string = fields?.character_id ?? fields?.characterId ?? '';
-  const rawStatus = String(fields?.status ?? 'active').toLowerCase();
-  const status = rawStatus.includes('active') ? 'active' : rawStatus.includes('claim') ? 'claimed' : 'expired';
+  const characterId: string = fields?.insured_character_id ?? fields?.character_id ?? '';
+  const rawStatus = fields?.status;
+  const statusNum = typeof rawStatus === 'number' ? rawStatus : parseInt(String(rawStatus ?? '0'), 10);
+  const status = statusNum === 0 ? 'active' : statusNum === 1 ? 'claimed' : statusNum === 2 ? 'expired' : statusNum === 3 ? 'cancelled' : 'expired';
 
   async function handleRenew(e: React.FormEvent) {
     e.preventDefault();
@@ -111,6 +118,34 @@ export default function PolicyDetailPage() {
     } catch {
       // error from hook
     }
+  }
+
+  async function handleCancel() {
+    if (!actionPoolId.trim()) { setToast({ type: 'error', msg: 'Pool ID required for cancel.' }); return; }
+    setToast(null);
+    try {
+      const digest = await cancel({ policyId: objectId, poolId: actionPoolId.trim() });
+      setToast({ type: 'success', msg: `Policy cancelled! Tx: ${digest}` });
+    } catch { /* error from hook */ }
+  }
+
+  async function handleTransfer() {
+    if (!transferRecipient.trim()) { setToast({ type: 'error', msg: 'Recipient address required.' }); return; }
+    setToast(null);
+    try {
+      const digest = await transferPolicy({ policyId: objectId, recipient: transferRecipient.trim() });
+      setToast({ type: 'success', msg: `Policy transferred! Tx: ${digest}` });
+      setTransferRecipient('');
+    } catch { /* error from hook */ }
+  }
+
+  async function handleExpire() {
+    if (!actionPoolId.trim()) { setToast({ type: 'error', msg: 'Pool ID required for expire.' }); return; }
+    setToast(null);
+    try {
+      const digest = await expire({ policyId: objectId, poolId: actionPoolId.trim() });
+      setToast({ type: 'success', msg: `Policy expired! Tx: ${digest}` });
+    } catch { /* error from hook */ }
   }
 
   // Estimate renewal premium
@@ -168,8 +203,8 @@ export default function PolicyDetailPage() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 grid grid-cols-2 gap-5">
           <Field label="Coverage" value={`${mistToSui(coverage)} SUI`} />
           <Field label="Premium Paid" value={`${mistToSui(premiumPaid)} SUI`} />
-          <Field label="Start Epoch" value={startEpoch} />
-          <Field label="End Epoch" value={endEpoch} />
+          <Field label="Created At" value={createdAt ? new Date(createdAt * 1000).toLocaleString() : '—'} />
+          <Field label="Expires At" value={expiresAt ? new Date(expiresAt * 1000).toLocaleString() : '—'} />
           <Field label="NCB Streak" value={
             <span className={ncbStreak > 0 ? 'text-orange-400 font-semibold' : ''}>
               {ncbStreak}
@@ -182,7 +217,6 @@ export default function PolicyDetailPage() {
               : <span className="text-gray-600">None</span>
           } />
           <Field label="Risk Tier" value={`${TIER_NAMES[tier] ?? tier} (${TIER_RATES[tier]?.bps / 100 ?? '?'}%)`} />
-          {owner && <Field label="Owner" value={owner} mono />}
           {characterId && <Field label="Character ID" value={characterId} mono />}
         </div>
       ) : (
@@ -259,6 +293,87 @@ export default function PolicyDetailPage() {
                 )}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Policy Actions — cancel/transfer/expire */}
+        {status === 'active' && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+            <h2 className="text-base font-semibold text-gray-200">Policy Actions</h2>
+
+            {/* Shared Pool ID input */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Risk Pool Object ID</label>
+              <input
+                type="text"
+                value={actionPoolId}
+                onChange={(e) => setActionPoolId(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-orange-500"
+                placeholder="0x..."
+              />
+            </div>
+
+            {/* Transfer */}
+            <div className="space-y-2">
+              <label className="block text-sm text-gray-400">Transfer to</label>
+              <input
+                type="text"
+                value={transferRecipient}
+                onChange={(e) => setTransferRecipient(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-orange-500"
+                placeholder="Recipient address (0x...)"
+              />
+              <p className="text-xs text-gray-600">Warning: NCB streak will be reset and cooldown applied.</p>
+              <button
+                onClick={handleTransfer}
+                disabled={transferPending}
+                className="w-full py-2 rounded-lg text-sm font-semibold border border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 disabled:opacity-50 transition-colors"
+              >
+                {transferPending ? 'Transferring...' : 'Transfer Policy'}
+              </button>
+              {transferError && <p className="text-red-400 text-xs">{transferError}</p>}
+            </div>
+
+            {/* Cancel */}
+            <div className="pt-3 border-t border-gray-800 space-y-2">
+              <p className="text-xs text-red-400/80">Cancel is irreversible. Premium is NOT refunded.</p>
+              <button
+                onClick={handleCancel}
+                disabled={cancelPending}
+                className="w-full py-2 rounded-lg text-sm font-semibold border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50 transition-colors"
+              >
+                {cancelPending ? 'Cancelling...' : 'Cancel Policy'}
+              </button>
+              {cancelError && <p className="text-red-400 text-xs">{cancelError}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Expire button — only if active and past expiry */}
+        {status === 'active' && expiresAt > 0 && Date.now() / 1000 > expiresAt && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
+            <h2 className="text-base font-semibold text-gray-200">Expire Policy</h2>
+            <p className="text-xs text-gray-500">This policy has passed its expiry date and can be formally expired.</p>
+            {!actionPoolId.trim() && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Risk Pool Object ID</label>
+                <input
+                  type="text"
+                  value={actionPoolId}
+                  onChange={(e) => setActionPoolId(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-orange-500"
+                  placeholder="0x..."
+                />
+              </div>
+            )}
+            <button
+              onClick={handleExpire}
+              disabled={expirePending}
+              className="w-full py-2 rounded-lg text-sm font-semibold bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-50 transition-colors"
+            >
+              {expirePending ? 'Expiring...' : 'Expire Policy'}
+            </button>
+            {expireError && <p className="text-red-400 text-xs">{expireError}</p>}
           </div>
         )}
 

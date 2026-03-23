@@ -159,7 +159,8 @@ fun test_e2e_full_lifecycle() {
         // Verify payout (10% deductible → 9 SUI)
         assert!(policy::claim_count(&policy_a) == 1);
         assert!(risk_pool::total_claims_paid(&pool) == EXPECTED_PAYOUT_0);
-        assert!(risk_pool::reserved_amount(&pool) == 0);
+        // H-3 fix: reserved = coverage - payout (remaining liability)
+        assert!(risk_pool::reserved_amount(&pool) == COVERAGE - EXPECTED_PAYOUT_0);
         assert!(registry::is_killmail_claimed(&claim_reg, km_key));
 
         policy_a.destroy();
@@ -204,10 +205,12 @@ fun test_e2e_full_lifecycle() {
     scenario.next_tx(PLAYER_C);
     {
         let mut auc = scenario.take_shared<Auction>();
+        let cfg = scenario.take_shared<ProtocolConfig>();
         let clk = clock::create_for_testing(scenario.ctx());
         let bid = coin::mint_for_testing<SUI>(5_000_000_000, scenario.ctx());
-        auction::place_bid(&mut auc, bid, &clk, scenario.ctx());
+        auction::place_bid(&mut auc, &cfg, bid, &clk, scenario.ctx());
         assert!(auction::highest_bid(&auc) == 5_000_000_000);
+        test_scenario::return_shared(cfg);
         test_scenario::return_shared(auc);
         clk.destroy_for_testing();
     };
@@ -352,10 +355,10 @@ fun test_e2e_renewal_after_claim() {
     let renew_pay = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     underwriting::renew_policy(&mut pa, &cfg, &mut pool, renew_pay, &clk, scenario.ctx());
 
-    // Streak was 0 (claimed) → renew increments to 1 → NCB = 10%
-    // Premium = 500M * (10000 - 1000) / 10000 = 450M
-    assert!(policy::no_claim_streak(&pa) == 1);
-    assert!(policy::premium_paid(&pa) == 450_000_000);
+    // NCB fix: claim happened since last renewal → penalty (no streak increment)
+    // Streak stays 0, premium = base (500M, no discount)
+    assert!(policy::no_claim_streak(&pa) == 0);
+    assert!(policy::premium_paid(&pa) == 500_000_000);
 
     pa.destroy();
     killmail::destroy_for_testing(km);
@@ -648,10 +651,12 @@ fun test_monkey_rapid_sequential_bids() {
         let bidder = bidders[i];
         scenario.next_tx(bidder);
         let mut auc = scenario.take_shared<Auction>();
+        let cfg = scenario.take_shared<ProtocolConfig>();
         let clk = clock::create_for_testing(scenario.ctx());
         let bid = coin::mint_for_testing<SUI>(bid_amount, scenario.ctx());
-        auction::place_bid(&mut auc, bid, &clk, scenario.ctx());
+        auction::place_bid(&mut auc, &cfg, bid, &clk, scenario.ctx());
         assert!(auction::highest_bid(&auc) == bid_amount);
+        test_scenario::return_shared(cfg);
         test_scenario::return_shared(auc);
         clk.destroy_for_testing();
 

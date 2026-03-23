@@ -6,7 +6,6 @@ use sui::coin::{Self, Coin};
 use sui::sui::SUI;
 use sui::clock::Clock;
 use sui::event;
-use wreckage_protocol::pool_config::AuctionConfig;
 use wreckage_protocol::salvage_nft::{Self, SalvageNFT};
 use wreckage_protocol::errors;
 use wreckage_protocol::config::ProtocolConfig;
@@ -21,7 +20,6 @@ const STATUS_DESTROYED: u8 = 3;
 // === Structs ===
 public struct AuctionRegistry has key {
     id: UID,
-    config: AuctionConfig,
     active_count: u64,
     version: u64,
 }
@@ -72,12 +70,10 @@ public struct AuctionDestroyedEvent has copy, drop {
 
 // === Constructor (package-visible, share inside this module) ===
 public(package) fun create_and_share_auction_registry(
-    config: AuctionConfig,
     ctx: &mut TxContext,
 ) {
     let registry = AuctionRegistry {
         id: object::new(ctx),
-        config,
         active_count: 0,
         version: 1,
     };
@@ -143,8 +139,12 @@ public(package) fun create_auction(
 
 // === Place Bid ===
 /// Place a bid on an active auction. Returns previous bid to outbid bidder.
+/// H-1: Uses AuctionConfig from registry (not hardcoded).
+/// H-2: Enforces min_bid_increment_bps.
+/// S-3: Caps total anti-snipe extension at 3x auction_duration.
 public fun place_bid(
     auction: &mut Auction,
+    config: &ProtocolConfig,
     bid_coin: Coin<SUI>,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -155,20 +155,18 @@ public fun place_bid(
     assert!(now < auction.ends_at, errors::auction_not_in_bidding());
 
     let bid_amount = bid_coin.value();
+    // M-8: Single source of truth — always read from ProtocolConfig
+    let auction_cfg = config.auction_config();
 
-    // First bid must meet min_opening_bid (floor_price already >= min_opening_bid)
+    // First bid must meet floor_price (already >= min_opening_bid)
     if (auction.highest_bid == 0) {
         assert!(bid_amount >= auction.floor_price, errors::bid_too_low());
     } else {
-        // Subsequent bids must exceed current highest by min_bid_increment_bps
-        // We don't have direct access to AuctionConfig here, so we use a fixed 5% as
-        // the plan stores config in registry. For now use floor_price-based minimum.
-        // Actually, we need the registry config. Let's keep it simple: require bid > highest_bid.
-        // The min increment is enforced as: new_bid >= highest_bid + highest_bid * 500/10000
-        // But we don't have the bps here. We store it from creation? No.
-        // Plan says place_bid takes just auction+bid+clock+ctx. Let's enforce > highest_bid only.
-        // The min_bid_increment is a UX concern, not a security one. MVP: just > highest_bid.
-        assert!(bid_amount > auction.highest_bid, errors::bid_too_low());
+        // H-2: Enforce min_bid_increment_bps from config
+        let min_increment = (((auction.highest_bid as u128)
+            * (auction_cfg.min_bid_increment_bps() as u128) / 10000) as u64);
+        let min_bid = auction.highest_bid + min_increment;
+        assert!(bid_amount >= min_bid, errors::bid_too_low());
     };
 
     // Return previous bid to outbid bidder
@@ -184,13 +182,24 @@ public fun place_bid(
     auction.highest_bidder = option::some(ctx.sender());
     auction.escrowed_bid.join(bid_coin.into_balance());
 
-    // Anti-snipe: if bid placed within anti_snipe_window of end, extend
-    // Use 600s (10 min) as default — matches AuctionConfig defaults
-    let anti_snipe_window = 600u64;
-    let anti_snipe_extension = 600u64;
+    // H-1: Anti-snipe from config (not hardcoded)
+    let anti_snipe_window = auction_cfg.anti_snipe_window();
+    let anti_snipe_extension = auction_cfg.anti_snipe_extension();
+    // S-3: Cap total extension at 3x original auction_duration from started_at
+    let max_ends_at = auction.started_at + auction_cfg.auction_duration() * 3;
+
     let extended = if (auction.ends_at > now && auction.ends_at - now <= anti_snipe_window) {
-        auction.ends_at = auction.ends_at + anti_snipe_extension;
-        true
+        let new_ends_at = auction.ends_at + anti_snipe_extension;
+        if (new_ends_at <= max_ends_at) {
+            auction.ends_at = new_ends_at;
+            true
+        } else if (auction.ends_at < max_ends_at) {
+            // Partial extension up to cap
+            auction.ends_at = max_ends_at;
+            true
+        } else {
+            false // Already at cap, no more extension
+        }
     } else {
         false
     };
@@ -221,6 +230,9 @@ public fun settle_auction(
         errors::auction_not_ended());
     assert!(now >= auction.ends_at, errors::auction_not_ended());
     assert!(auction.highest_bid > 0, errors::auction_not_ended());
+
+    // S-2: Validate pool tier matches auction source
+    assert!(pool.risk_tier() == auction.source_pool_tier, errors::auction_pool_tier_mismatch());
 
     // Extract NFT and transfer to winner
     let mut nft = auction.salvage_nft.extract();
@@ -286,6 +298,9 @@ public fun buyout(
     assert!(auction.status == STATUS_BUYOUT, errors::auction_not_in_buyout());
     assert!(now < auction.ends_at, errors::auction_not_in_buyout());
     assert!(payment.value() >= auction.floor_price, errors::buyout_payment_insufficient());
+
+    // S-2: Validate pool tier matches auction source
+    assert!(pool.risk_tier() == auction.source_pool_tier, errors::auction_pool_tier_mismatch());
 
     // Set bid info for settle logic
     auction.highest_bid = payment.value();

@@ -135,7 +135,8 @@ fun test_submit_claim_full_flow() {
 
     // Verify pool state
     assert!(risk_pool::total_claims_paid(&pool) == EXPECTED_PAYOUT_0);
-    assert!(risk_pool::reserved_amount(&pool) == 0); // full coverage released
+    // H-3 fix: reserved = coverage - payout = 10B - 9B = 1B (remaining liability)
+    assert!(risk_pool::reserved_amount(&pool) == COVERAGE - EXPECTED_PAYOUT_0);
 
     // Verify killmail recorded
     assert!(registry::is_killmail_claimed(&claim_reg, km_key));

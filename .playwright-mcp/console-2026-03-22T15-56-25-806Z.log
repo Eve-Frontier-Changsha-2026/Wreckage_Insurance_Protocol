@@ -1,0 +1,4 @@
+[     350ms] The requested module '/node_modules/.vite/deps/@mysten_dapp-kit-react.js?v=191e17b6' does not provide an export named 'ConnectButton'
+[  522404ms] The requested module '/node_modules/.vite/deps/@mysten_dapp-kit-react.js?v=25f53b11' does not provide an export named 'ConnectButton'
+[  745294ms] [ERROR] WebSocket connection to 'ws://localhost:5174/?token=rAG5pHyk47Dy' failed:  @ http://localhost:5174/@vite/client:840
+[  747582ms] The requested module '/node_modules/.vite/deps/@mysten_dapp-kit-react.js?v=22b55958' does not provide an export named 'ConnectButton'

@@ -83,6 +83,8 @@ public fun add_pool_tier(
     config: &mut ProtocolConfig,
     pool_config: PoolConfig,
 ) {
+    // Validate against ProtocolConfig hard limits (spec §11.3)
+    validate_pool_config_limits(config, &pool_config);
     config.pool_configs.push_back(pool_config);
 }
 
@@ -92,6 +94,8 @@ public fun update_pool_config(
     tier: u8,
     new_config: PoolConfig,
 ) {
+    // Validate against ProtocolConfig hard limits (spec §11.3)
+    validate_pool_config_limits(config, &new_config);
     let configs = &mut config.pool_configs;
     let len = configs.length();
     let mut i = 0;
@@ -127,6 +131,26 @@ public fun update_treasury(_: &AdminCap, config: &mut ProtocolConfig, new_treasu
     config.treasury = new_treasury;
 }
 
+// M-2: Admin setters for max_claims_per_policy and protocol_fee_bps
+public fun set_max_claims_per_policy(_: &AdminCap, config: &mut ProtocolConfig, value: u8) {
+    assert!(value > 0, wreckage_protocol::errors::invalid_config());
+    config.max_claims_per_policy = value;
+}
+
+public fun set_protocol_fee_bps(_: &AdminCap, config: &mut ProtocolConfig, value: u64) {
+    assert!(value <= 10000, wreckage_protocol::errors::invalid_config());
+    config.protocol_fee_bps = value;
+}
+
+// M-1: Admin pool activation/deactivation
+public fun admin_set_pool_active(
+    _: &AdminCap,
+    pool: &mut wreckage_protocol::risk_pool::RiskPool,
+    active: bool,
+) {
+    wreckage_protocol::risk_pool::set_active(pool, active);
+}
+
 // === Admin: Create + Share Pool ===
 public fun admin_create_pool(
     _: &AdminCap,
@@ -136,6 +160,18 @@ public fun admin_create_pool(
 ) {
     assert_version(config);
     wreckage_protocol::risk_pool::create_and_share_pool(pool_config, ctx);
+}
+
+// === Config Validation (spec §11.3) ===
+/// Validates PoolConfig against ProtocolConfig hard limits.
+/// Called by add_pool_tier and update_pool_config.
+fun validate_pool_config_limits(config: &ProtocolConfig, pool_config: &PoolConfig) {
+    assert!(pool_config.deductible_bps() >= config.min_deductible_bps,
+        wreckage_protocol::errors::invalid_config());
+    assert!(pool_config.base_premium_rate() >= config.min_premium_rate_bps,
+        wreckage_protocol::errors::invalid_config());
+    assert!(pool_config.max_coverage() <= config.max_coverage_limit,
+        wreckage_protocol::errors::invalid_config());
 }
 
 // === Version Check (used by ALL shared object operations) ===

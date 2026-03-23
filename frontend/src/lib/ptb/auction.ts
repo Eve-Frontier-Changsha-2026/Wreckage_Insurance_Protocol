@@ -11,10 +11,12 @@ export function buildPlaceBid(args: {
 
   const [bidCoin] = tx.splitCoins(tx.gas, [args.bidAmountMist]);
 
+  // M-8: place_bid now reads AuctionConfig from ProtocolConfig (single source of truth)
   tx.moveCall({
     target: `${PACKAGE_ID}::auction::place_bid`,
     arguments: [
       tx.object(args.auctionId),
+      tx.object(SHARED_OBJECTS.protocolConfig),
       bidCoin,
       tx.object(CLOCK),
     ],

@@ -60,6 +60,8 @@ export function buildTransferPolicy(args: {
 }) {
   const tx = new Transaction();
 
+  // H-4: transfer_policy now takes policy by value and does transfer internally
+  // No separate transferObjects needed — the Move function handles it atomically
   tx.moveCall({
     target: `${PACKAGE_ID}::underwriting::transfer_policy`,
     arguments: [
@@ -70,8 +72,25 @@ export function buildTransferPolicy(args: {
     ],
   });
 
-  // Caller must follow with public_transfer in same PTB
-  tx.transferObjects([tx.object(args.policyId)], args.recipient);
+  return tx;
+}
+
+export function buildCancelPolicy(args: {
+  policyId: string;
+  poolId: string;
+}) {
+  const tx = new Transaction();
+
+  tx.moveCall({
+    target: `${PACKAGE_ID}::underwriting::cancel_policy`,
+    arguments: [
+      tx.object(args.policyId),
+      tx.object(SHARED_OBJECTS.protocolConfig),
+      tx.object(args.poolId),
+      tx.object(SHARED_OBJECTS.policyRegistry),
+      tx.object(CLOCK),
+    ],
+  });
 
   return tx;
 }
@@ -82,12 +101,14 @@ export function buildExpirePolicy(args: {
 }) {
   const tx = new Transaction();
 
+  // H-5: expire_policy now requires ProtocolConfig for pause check
   tx.moveCall({
     target: `${PACKAGE_ID}::underwriting::expire_policy`,
     arguments: [
       tx.object(args.policyId),
       tx.object(SHARED_OBJECTS.policyRegistry),
       tx.object(args.poolId),
+      tx.object(SHARED_OBJECTS.protocolConfig),
       tx.object(CLOCK),
     ],
   });

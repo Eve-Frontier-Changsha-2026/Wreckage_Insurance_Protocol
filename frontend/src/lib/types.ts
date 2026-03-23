@@ -10,6 +10,7 @@ export interface InsurancePolicy {
   ncbStreak: number;
   claimCount: number;
   hasSelfDestructRider: boolean;
+  poolReserved: number;
   status: 'active' | 'expired' | 'claimed';
 }
 

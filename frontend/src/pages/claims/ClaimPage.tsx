@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { useCurrentAccount, ConnectButton } from '@mysten/dapp-kit-react';
+import { useCurrentAccount } from '@mysten/dapp-kit-react';
+import { ConnectButton } from '@mysten/dapp-kit-react/ui';
 import { useOwnedPolicies } from '../../hooks/useInsurancePolicy';
 import { useSubmitClaim, useSubmitSelfDestructClaim } from '../../hooks/useClaims';
 import { TIER_NAMES } from '../../lib/types';

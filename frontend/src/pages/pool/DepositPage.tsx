@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useCurrentAccount, ConnectButton } from '@mysten/dapp-kit-react';
+import { useCurrentAccount } from '@mysten/dapp-kit-react';
+import { ConnectButton } from '@mysten/dapp-kit-react/ui';
 import { useRiskPoolDetail, useDeposit } from '../../hooks/useRiskPool';
 
 const MIST_PER_SUI = 1_000_000_000n;

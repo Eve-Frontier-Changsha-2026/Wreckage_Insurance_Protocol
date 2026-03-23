@@ -25,6 +25,8 @@ public struct InsurancePolicy has key, store {
     claim_count: u8,
     no_claim_streak: u8,
     renewal_count: u8,
+    pool_reserved: u64,
+    claims_at_last_renewal: u8,
     version: u64,
 }
 
@@ -50,6 +52,12 @@ public struct PolicyTransferredEvent has copy, drop {
     policy_id: ID,
     from: address,
     to: address,
+}
+
+public struct PolicyCancelledEvent has copy, drop {
+    policy_id: ID,
+    character_id: TenantItemId,
+    cancelled_at: u64,
 }
 
 // === Constants (public) ===
@@ -85,6 +93,8 @@ public(package) fun create(
         claim_count: 0,
         no_claim_streak: 0,
         renewal_count: 0,
+        pool_reserved: coverage_amount,
+        claims_at_last_renewal: 0,
         version: 1,
     };
 
@@ -115,6 +125,8 @@ public fun cooldown_until(p: &InsurancePolicy): u64 { p.cooldown_until }
 public fun claim_count(p: &InsurancePolicy): u8 { p.claim_count }
 public fun no_claim_streak(p: &InsurancePolicy): u8 { p.no_claim_streak }
 public fun renewal_count(p: &InsurancePolicy): u8 { p.renewal_count }
+public fun pool_reserved(p: &InsurancePolicy): u64 { p.pool_reserved }
+public fun claims_at_last_renewal(p: &InsurancePolicy): u8 { p.claims_at_last_renewal }
 public fun version(p: &InsurancePolicy): u64 { p.version }
 
 public fun is_active(p: &InsurancePolicy): bool { p.status == STATUS_ACTIVE }
@@ -125,15 +137,16 @@ public(package) fun set_cooldown_until(p: &mut InsurancePolicy, until: u64) { p.
 public(package) fun increment_claim_count(p: &mut InsurancePolicy) { p.claim_count = p.claim_count + 1; }
 public(package) fun reset_no_claim_streak(p: &mut InsurancePolicy) { p.no_claim_streak = 0; }
 public(package) fun increment_no_claim_streak(p: &mut InsurancePolicy) { p.no_claim_streak = p.no_claim_streak + 1; }
+public(package) fun set_pool_reserved(p: &mut InsurancePolicy, amount: u64) { p.pool_reserved = amount; }
+public(package) fun set_claims_at_last_renewal(p: &mut InsurancePolicy, val: u8) { p.claims_at_last_renewal = val; }
 public(package) fun set_renewal_data(
     p: &mut InsurancePolicy,
     new_premium: u64,
     new_expires_at: u64,
-    new_created_at: u64,
 ) {
     p.premium_paid = new_premium;
     p.expires_at = new_expires_at;
-    p.created_at = new_created_at;
+    // created_at preserved — renewal should not reset the original creation timestamp
     p.renewal_count = p.renewal_count + 1;
 }
 
@@ -152,6 +165,10 @@ public(package) fun emit_renewed_event(
 
 public(package) fun emit_transferred_event(policy_id: ID, from: address, to: address) {
     sui::event::emit(PolicyTransferredEvent { policy_id, from, to });
+}
+
+public(package) fun emit_cancelled_event(policy_id: ID, character_id: TenantItemId, cancelled_at: u64) {
+    sui::event::emit(PolicyCancelledEvent { policy_id, character_id, cancelled_at });
 }
 
 // === Delete (package-only — blocks external destruction of active policies) ===

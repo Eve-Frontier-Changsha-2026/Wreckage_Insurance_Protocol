@@ -72,8 +72,18 @@ public fun purchase_policy(
     // Payment check
     assert!(payment.value() >= total_premium, errors::insufficient_payment());
 
-    // Split exact premium and collect into pool
-    let premium_coin = coin::split(&mut payment, total_premium, ctx);
+    // Split exact premium
+    let mut premium_coin = coin::split(&mut payment, total_premium, ctx);
+
+    // Protocol fee split: fee to treasury, remainder to pool
+    let fee_bps = config.protocol_fee_bps();
+    if (fee_bps > 0) {
+        let fee_amount = (((total_premium as u128) * (fee_bps as u128) / 10000) as u64);
+        if (fee_amount > 0) {
+            let fee_coin = coin::split(&mut premium_coin, fee_amount, ctx);
+            transfer::public_transfer(fee_coin, config.treasury());
+        };
+    };
     risk_pool::collect_premium(pool, premium_coin.into_balance());
 
     // Reserve coverage in pool (checks utilization cap)
@@ -127,9 +137,21 @@ public fun renew_policy(
     let pool_config = config.get_pool_config(policy.risk_tier());
     let now = clock.timestamp_ms() / 1000;
 
-    // If time-expired: treat as claim-free period → increment streak
+    // M-7: If time-expired, enforce renewal window (cannot renew indefinitely after expiry)
     if (now >= policy.expires_at()) {
+        let grace = pool_config.renewal_waiting_period();
+        assert!(now <= policy.expires_at() + grace, errors::renewal_waiting_period());
+    };
+
+    // NCB fix: skip streak increment if claims occurred since last renewal
+    let current_claims = policy.claim_count();
+    if (current_claims > policy.claims_at_last_renewal()) {
+        // Penalty served: claims happened since last renewal, no streak increment
+        policy.set_claims_at_last_renewal(current_claims);
+    } else {
+        // No new claims: reward with streak increment
         policy.increment_no_claim_streak();
+        policy.set_claims_at_last_renewal(current_claims);
     };
 
     // Calculate base premium
@@ -156,11 +178,21 @@ public fun renew_policy(
 
     // Payment
     assert!(payment.value() >= renewal_premium, errors::insufficient_payment());
-    let premium_coin = coin::split(&mut payment, renewal_premium, ctx);
+    let mut premium_coin = coin::split(&mut payment, renewal_premium, ctx);
+
+    // Protocol fee split
+    let fee_bps = config.protocol_fee_bps();
+    if (fee_bps > 0) {
+        let fee_amount = (((renewal_premium as u128) * (fee_bps as u128) / 10000) as u64);
+        if (fee_amount > 0) {
+            let fee_coin = coin::split(&mut premium_coin, fee_amount, ctx);
+            transfer::public_transfer(fee_coin, config.treasury());
+        };
+    };
     risk_pool::collect_premium(pool, premium_coin.into_balance());
 
     // Update policy dates (set_renewal_data increments renewal_count)
-    policy.set_renewal_data(renewal_premium, now + POLICY_DURATION, now);
+    policy.set_renewal_data(renewal_premium, now + POLICY_DURATION);
 
     // Emit event
     policy::emit_renewed_event(
@@ -180,10 +212,10 @@ public fun renew_policy(
 }
 
 // === Transfer ===
-/// Custom transfer with validation. Resets NCB streak, sets cooldown.
-/// Caller must follow with transfer::public_transfer in the same PTB.
+/// Transfer policy to a new owner. Resets NCB streak, sets cooldown,
+/// and performs the actual transfer atomically (H-4 fix).
 public fun transfer_policy(
-    policy: &mut InsurancePolicy,
+    mut policy: InsurancePolicy,
     config: &ProtocolConfig,
     recipient: address,
     clock: &Clock,
@@ -205,7 +237,11 @@ public fun transfer_policy(
     policy.reset_no_claim_streak();
 
     // Emit event
-    policy::emit_transferred_event(policy.id(), ctx.sender(), recipient);
+    let policy_id = policy.id();
+    policy::emit_transferred_event(policy_id, ctx.sender(), recipient);
+
+    // H-4: Enforce actual transfer inside function
+    transfer::public_transfer(policy, recipient);
 }
 
 // === Expire ===
@@ -215,10 +251,15 @@ public fun expire_policy(
     policy: &mut InsurancePolicy,
     policy_registry: &mut PolicyRegistry,
     pool: &mut RiskPool,
+    config: &ProtocolConfig,
     clock: &Clock,
 ) {
+    config::assert_version(config);
     registry::assert_policy_registry_version(policy_registry);
     risk_pool::assert_version(pool);
+
+    // H-5: Block expiry during emergency pause (prevents reservation release during crisis)
+    assert!(!config.is_policy_paused(), errors::protocol_paused());
 
     // Must be active status
     assert!(policy.is_active(), errors::policy_not_active());
@@ -227,8 +268,14 @@ public fun expire_policy(
     let now = clock.timestamp_ms() / 1000;
     assert!(now >= policy.expires_at(), errors::policy_expired());
 
-    // Claim-free expiry → increment streak
-    policy.increment_no_claim_streak();
+    // NCB fix: skip streak increment if claims occurred since last renewal
+    let current_claims = policy.claim_count();
+    if (current_claims > policy.claims_at_last_renewal()) {
+        policy.set_claims_at_last_renewal(current_claims);
+    } else {
+        policy.increment_no_claim_streak();
+        policy.set_claims_at_last_renewal(current_claims);
+    };
 
     // Mark expired
     policy.set_status(policy::status_expired());
@@ -236,11 +283,52 @@ public fun expire_policy(
     // Unregister from PolicyRegistry
     registry::unregister_policy(policy_registry, policy.insured_character_id());
 
-    // Release coverage reservation
-    risk_pool::release_reservation(pool, policy.coverage_amount());
+    // Release remaining coverage reservation (tracked per-policy)
+    let remaining = policy.pool_reserved();
+    if (remaining > 0) {
+        risk_pool::release_reservation(pool, remaining);
+        policy.set_pool_reserved(0);
+    };
 
     // Emit event
     event::emit(PolicyExpiredEvent { policy_id: policy.id() });
+}
+
+// === Cancel ===
+/// Owner cancels active policy. No refund. Releases reservation, unregisters from registry.
+/// Allowed even during pause (owner-initiated voluntary exit).
+public fun cancel_policy(
+    policy: &mut InsurancePolicy,
+    config: &ProtocolConfig,
+    pool: &mut RiskPool,
+    policy_registry: &mut PolicyRegistry,
+    clock: &Clock,
+    _ctx: &mut TxContext,
+) {
+    config::assert_version(config);
+    registry::assert_policy_registry_version(policy_registry);
+    risk_pool::assert_version(pool);
+
+    // Must be active (not expired/claimed/cancelled)
+    assert!(policy.is_active(), errors::cancellation_not_allowed());
+
+    let now = clock.timestamp_ms() / 1000;
+
+    // Mark cancelled
+    policy.set_status(policy::status_cancelled());
+
+    // Unregister from PolicyRegistry
+    registry::unregister_policy(policy_registry, policy.insured_character_id());
+
+    // Release remaining coverage reservation
+    let remaining = policy.pool_reserved();
+    if (remaining > 0) {
+        risk_pool::release_reservation(pool, remaining);
+        policy.set_pool_reserved(0);
+    };
+
+    // Emit event
+    policy::emit_cancelled_event(policy.id(), policy.insured_character_id(), now);
 }
 
 // === Accessors ===

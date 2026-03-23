@@ -1,0 +1,4 @@
+[      69ms] The requested module '/node_modules/.vite/deps/@mysten_dapp-kit-react.js?v=22b55958' does not provide an export named 'ConnectButton'
+[  517493ms] [WARNING] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information. @ http://localhost:5174/@vite/client:509
+[  636346ms] [ERROR] WebSocket connection to 'ws://localhost:5174/?token=KvMfaR5F9Lhj' failed:  @ http://localhost:5174/@vite/client:840
+[  638649ms] [WARNING] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information. @ http://localhost:5174/@vite/client:509

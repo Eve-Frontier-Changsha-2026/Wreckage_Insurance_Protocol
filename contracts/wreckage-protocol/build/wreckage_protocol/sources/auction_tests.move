@@ -95,13 +95,15 @@ fun test_create_auction_and_place_bid_and_settle() {
 
     // Place bid (floor_price = 3 SUI * 7000/10000 = 2.1 SUI)
     let mut auc = scenario.take_shared<Auction>();
+    let cfg = scenario.take_shared<ProtocolConfig>();
     assert!(auction::status(&auc) == auction::status_bidding());
     let floor = auction::floor_price(&auc);
     assert!(floor == 2_100_000_000); // 2.1 SUI
 
     let bid = coin::mint_for_testing<SUI>(3_000_000_000, scenario.ctx()); // 3 SUI
-    auction::place_bid(&mut auc, bid, &clk, scenario.ctx());
+    auction::place_bid(&mut auc, &cfg, bid, &clk, scenario.ctx());
     assert!(auction::highest_bid(&auc) == 3_000_000_000);
+    test_scenario::return_shared(cfg);
     test_scenario::return_shared(auc);
     scenario.next_tx(admin);
 
@@ -157,9 +159,11 @@ fun test_bid_too_low() {
 
     // Bid below floor price — should fail
     let mut auc = scenario.take_shared<Auction>();
+    let cfg = scenario.take_shared<ProtocolConfig>();
     let low_bid = coin::mint_for_testing<SUI>(100_000_000, scenario.ctx()); // 0.1 SUI < 2.1 SUI floor
-    auction::place_bid(&mut auc, low_bid, &clk, scenario.ctx());
+    auction::place_bid(&mut auc, &cfg, low_bid, &clk, scenario.ctx());
 
+    test_scenario::return_shared(cfg);
     test_scenario::return_shared(auc);
     clock::destroy_for_testing(clk);
     scenario.end();
@@ -188,17 +192,21 @@ fun test_outbid_returns_previous_bid() {
 
     // Bidder1 places first bid
     let mut auc = scenario.take_shared<Auction>();
+    let cfg = scenario.take_shared<ProtocolConfig>();
     let bid1 = coin::mint_for_testing<SUI>(3_000_000_000, scenario.ctx()); // 3 SUI
-    auction::place_bid(&mut auc, bid1, &clk, scenario.ctx());
+    auction::place_bid(&mut auc, &cfg, bid1, &clk, scenario.ctx());
     assert!(auction::highest_bid(&auc) == 3_000_000_000);
+    test_scenario::return_shared(cfg);
     test_scenario::return_shared(auc);
     scenario.next_tx(bidder2);
 
-    // Bidder2 outbids
+    // Bidder2 outbids (must meet 5% min increment: 3B * 1.05 = 3.15B → 5B OK)
     let mut auc = scenario.take_shared<Auction>();
+    let cfg = scenario.take_shared<ProtocolConfig>();
     let bid2 = coin::mint_for_testing<SUI>(5_000_000_000, scenario.ctx()); // 5 SUI
-    auction::place_bid(&mut auc, bid2, &clk, scenario.ctx());
+    auction::place_bid(&mut auc, &cfg, bid2, &clk, scenario.ctx());
     assert!(auction::highest_bid(&auc) == 5_000_000_000);
+    test_scenario::return_shared(cfg);
     test_scenario::return_shared(auc);
     scenario.next_tx(bidder1);
 
@@ -232,6 +240,7 @@ fun test_anti_snipe_extension() {
     scenario.next_tx(bidder);
 
     let mut auc = scenario.take_shared<Auction>();
+    let cfg = scenario.take_shared<ProtocolConfig>();
     let original_ends_at = auction::ends_at(&auc);
 
     // Advance to within anti-snipe window (last 10 min = 600s)
@@ -239,11 +248,12 @@ fun test_anti_snipe_extension() {
     clock::increment_for_testing(&mut clk, 258900 * 1000);
 
     let bid = coin::mint_for_testing<SUI>(3_000_000_000, scenario.ctx());
-    auction::place_bid(&mut auc, bid, &clk, scenario.ctx());
+    auction::place_bid(&mut auc, &cfg, bid, &clk, scenario.ctx());
 
     // ends_at should be extended by 600s
     assert!(auction::ends_at(&auc) == original_ends_at + 600);
 
+    test_scenario::return_shared(cfg);
     test_scenario::return_shared(auc);
     clock::destroy_for_testing(clk);
     scenario.end();
@@ -342,8 +352,10 @@ fun test_revenue_split_to_pool_and_treasury() {
 
     // Bid 10 SUI
     let mut auc = scenario.take_shared<Auction>();
+    let cfg = scenario.take_shared<ProtocolConfig>();
     let bid = coin::mint_for_testing<SUI>(10_000_000_000, scenario.ctx());
-    auction::place_bid(&mut auc, bid, &clk, scenario.ctx());
+    auction::place_bid(&mut auc, &cfg, bid, &clk, scenario.ctx());
+    test_scenario::return_shared(cfg);
     test_scenario::return_shared(auc);
     scenario.next_tx(admin);
 

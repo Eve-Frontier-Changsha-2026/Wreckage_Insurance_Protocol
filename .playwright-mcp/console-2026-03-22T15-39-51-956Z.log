@@ -1,0 +1,2 @@
+[     277ms] The requested module '/node_modules/.vite/deps/@mysten_dapp-kit-react.js?v=3896bfb5' does not provide an export named 'ConnectButton'
+[  134379ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:50849/favicon.ico:0

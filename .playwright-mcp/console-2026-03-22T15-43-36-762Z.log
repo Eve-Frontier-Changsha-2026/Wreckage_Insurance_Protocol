@@ -1,0 +1,8 @@
+[     211ms] The requested module '/node_modules/.vite/deps/@mysten_dapp-kit-react.js?v=cca81e47' does not provide an export named 'ConnectButton'
+[  359096ms] The requested module '/node_modules/poseidon-lite/index.js?v=358703b0' does not provide an export named 'poseidon1'
+[  372511ms] [ERROR] WebSocket connection to 'ws://localhost:5174/?token=wY2PX7nZ8VT-' failed:  @ http://localhost:5174/@vite/client:840
+[  375017ms] The requested module '/node_modules/poseidon-lite/index.js?v=ee15237b' does not provide an export named 'poseidon1'
+[  559751ms] The requested module '/node_modules/@nanostores/lit/lib/index.js?v=97ecdab3' does not provide an export named 'MultiStoreController'
+[  616064ms] [ERROR] WebSocket connection to 'ws://localhost:5174/?token=j9y2xwezXJ2x' failed:  @ http://localhost:5174/@vite/client:840
+[  618600ms] The requested module '/node_modules/@nanostores/lit/lib/index.js?v=40737eb9' does not provide an export named 'MultiStoreController'
+[  649335ms] The requested module '/node_modules/.vite/deps/@mysten_dapp-kit-react.js?v=a340761e' does not provide an export named 'ConnectButton'

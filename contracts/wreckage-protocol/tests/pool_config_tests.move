@@ -40,3 +40,48 @@ fun test_create_valid_auction_config() {
     assert!(pool_config::auction_duration(&config) == 259200);
     assert!(pool_config::anti_snipe_window(&config) == 600);
 }
+
+// M-3: subrogation_rate_bps > 10000 rejected
+#[test]
+#[expected_failure]
+fun test_subrogation_rate_exceeds_max_bps() {
+    pool_config::new_pool_config(
+        1, 500, 50_000_000_000, 1_000_000_000,
+        172800, 1000, 7000, 604800, 5000, 2,
+        1000, 1000, 3, 3000,
+        10001, // subrogation_rate_bps > 10000
+        86400,
+    );
+}
+
+// M-4: anti_snipe_window > auction_duration rejected
+#[test]
+#[expected_failure]
+fun test_anti_snipe_window_exceeds_auction_duration() {
+    pool_config::new_auction_config(
+        86400,       // auction_duration = 24h
+        172800,
+        500,
+        7000,
+        8000,
+        86401,       // anti_snipe_window > auction_duration
+        600,
+        100_000_000,
+    );
+}
+
+// M-4: anti_snipe_extension > auction_duration rejected
+#[test]
+#[expected_failure]
+fun test_anti_snipe_extension_exceeds_auction_duration() {
+    pool_config::new_auction_config(
+        86400,       // auction_duration = 24h
+        172800,
+        500,
+        7000,
+        8000,
+        600,
+        86401,       // anti_snipe_extension > auction_duration
+        100_000_000,
+    );
+}
