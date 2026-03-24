@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
-import { ConnectButton } from '@mysten/dapp-kit-react/ui';
+import { ConnectButton } from '@mysten/dapp-kit-react';
 import { useOwnedPolicies } from '../../hooks/useInsurancePolicy';
 import { TIER_NAMES } from '../../lib/types';
 

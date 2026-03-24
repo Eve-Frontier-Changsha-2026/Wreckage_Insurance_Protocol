@@ -38,7 +38,9 @@
       "Bash(kill:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(sort -k5 -n -r)",
+      "Bash(ps:*)"
     ]
   },
   "enabledPlugins": {

@@ -3,23 +3,27 @@
 ## Deployment (Testnet)
 
 - **Network**: testnet
-- **Date**: 2026-03-21
-- **PackageID**: `0x053c5c2ae486c33e6e91d9169ea79385211d46373224953ad752ecf576786f77`
+- **Date**: 2026-03-24 (v6)
+- **PackageID**: `0xbb2f732232d0bf4b3c7b91cce214635e329952ff9acea810963c56cc8d28ac41`
 - **Deployer**: `0x1509b5fdf09296b2cf749a710e36da06f5693ccd5b2144ad643b3a895abcbc4c`
-- **Gas**: ~0.784 SUI
-- **Deployment mode**: Single-package (world + wreckage-core + wreckage-protocol merged via `--with-unpublished-dependencies`)
+- **Gas**: ~0.810 SUI
+- **Deployment mode**: Single-package (world + wreckage-protocol merged via `--with-unpublished-dependencies`)
+- **Modules**: 38 (20 world + 18 protocol)
+- **Size note**: Package hit 100KB limit; trimmed unused error constants + integration mock code
 
 ### Key Object IDs
 
 | Object | ID |
 |--------|----|
-| ProtocolConfig | `0xaf987a7f3e744ed40d3c5fa8df827d9968bc305b78137d1b805bab4c65ba28bf` |
-| PolicyRegistry | `0x4b1ad0fb5d335aefaa47d46fff10e5fc30336f24138e104cb8fb26ab1f73d0bc` |
-| ClaimRegistry | `0xbe6e14a5b0028c84bd2af59ff96f41a5d4878783a4592341b0711df287fcab40` |
-| AuctionRegistry | `0xba5a4846807889ff322983a4008069fb417b780f4cc94ec8f44e5d5a8216697d` |
-| UpgradeCap | `0xa9d9767d5f982777b08541319019e5d36e4f5e6b7f8c442a2eaa4d68a0c0c935` |
+| ProtocolConfig | `0x0e9ca9dbc87e828f907f0c8011973a9ba5ee8d3c1e0bea08b42f050a622d4523` |
+| PolicyRegistry | `0x11903d4c33205930b2fd9f79cbf2899d301940a4dc79b01e76981ab3806fbef8` |
+| ClaimRegistry | `0xe42f02223e9e635a2b03c9e3337fdcba0fb1a9bb7fba469df17bb70c142d8036` |
+| AuctionRegistry | `0x682807b31effdf6160e296b00012331b3a58b8560b102f733dfc6919944e29f9` |
+| ValuationRegistry | `0x0a617a6b38cbe66b8f0e00d9b10daf3f6383bf62c9e13ad3de6d89716f99f77a` |
+| AdminCap | `0x8fe5a8540278123465958930271f79448934b31873a86225a7c02c7591fc2038` |
+| UpgradeCap | `0x3739533d271b68d15bb5f1a28bc89e2f7a32d8cacf666c59c40022eb05f03179` |
 
-## Module Summary (16 modules in wreckage-protocol)
+## Module Summary (18 modules in wreckage-protocol)
 
 | Module | Purpose |
 |--------|---------|
@@ -38,14 +42,17 @@
 | `salvage` | SalvageNFT lifecycle management |
 | `auction` | AuctionRegistry + Auction + create/bid/settle/buyout/destroy |
 | `subrogation` | emit_subrogation — bounty reward calculation from subrogation_rate_bps |
-| `integration` | Mock events: SalvageBountyRequest, FleetInsuranceRequest, ClaimCompletedHook |
+| `integration` | ClaimCompletedHook event (mock bounty/fleet code removed for package size) |
+| `item_valuation` | ValuationRegistry (Table-based oracle) + set_item_price + batch + LTV + estimate_value |
+| `ssu_extension` | SSU extension: Auth witness + 5 entry wrappers (purchase/claim/SD/renew/cancel via SSU) |
 
 ## Tests
 
-- **Total**: 94 tests all passing
+- **Total**: 112 tests all passing (v6)
 - wreckage-core modules (merged): 10 tests (policy 3, pool_config 7, rider 3)
 - config: 12, registry: 6, risk_pool: 11, anti_fraud: 12, underwriting: 11
-- claims: 6, salvage: 2, auction: 8, e2e: 13
+- claims: 6, salvage: 2, auction: 8, e2e: 11 (2 integration mock tests removed)
+- item_valuation: 10, ssu_extension: 2
 
 ## Security Status
 
@@ -129,6 +136,34 @@
 - **Move Code Quality**: 38/50+ rules passed, 8 style improvements (non-blocking)
 - **Security Guard**: Clean — no secrets, no .env exposure
 - **Red Team (10 rounds)**: 0 exploits, 2 suspicious (NEGLIGIBLE/LOW), 48 defended, 70% confidence
+
+## EVE SDK Integration (2026-03-23~24)
+
+### Task 1: item_valuation.move (2026-03-23) ✅
+- `ValuationRegistry` (Table-based admin oracle): `set_item_price`, `batch_set_item_prices`, LTV ratio
+- `estimate_value(type_id, quantity)`, `collateral_value(type_id, quantity)` — reserved for future items-as-collateral
+- errors.move: 4 new codes (65 SSU, 70-72 valuation) + 4 accessors
+- init.move: `create_and_share_valuation_registry(ctx)` added
+- 10 tests (set/get, LTV, batch, update, 3 monkey tests)
+
+### Task 2: ssu_extension.move (2026-03-24) ✅
+- **Auth witness**: `public struct Auth has drop {}` — SSU owner opts in via `storage_unit::authorize_extension<Auth>()`
+- **5 entry wrappers**: `purchase_via_ssu`, `claim_via_ssu`, `self_destruct_claim_via_ssu`, `renew_via_ssu`, `cancel_via_ssu`
+- **SSUInsuranceEvent**: `(ssu_id, operation, policy_id, actor)` — tracks SSU-routed operations
+- **Design**: thin wrappers only — `assert_ssu_online()` + delegate to underwriting/claims + emit event
+- 2 tests (online SSU purchase success, offline SSU rejection)
+- **Plan vs Reality fixes**:
+  - `network_node::anchor()`: `location_hash` BEFORE fuel params (plan had wrong order)
+  - `borrow_owner_cap` not `receive_owner_cap` (hot-potato pattern)
+  - `deposit_fuel_test()`: test-only version, no `admin_acl`/`ctx` params
+  - `create_character()`: needs `registry`, `tribe_id`, `name` params (plan used old signature)
+  - SSU tests need `configure_assembly_energy` + `register_server_address` in setup
+
+### Remaining (not yet started)
+- Task 3: Move build verification (done implicitly — 114 tests passing)
+- Tasks 4-7: Frontend (@evefrontier/dapp-kit, PTB, hooks, pages)
+- Task 8: Deploy v6 (fresh publish — new shared object ValuationRegistry)
+- Task 9: Update progress.md
 
 ## Known Risks / Limitations
 

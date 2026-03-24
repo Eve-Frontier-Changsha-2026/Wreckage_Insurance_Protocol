@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
-import { ConnectButton } from '@mysten/dapp-kit-react/ui';
+import { ConnectButton } from '@mysten/dapp-kit-react';
 import { useRiskPoolDetail, useOwnedLPPositions, useWithdraw } from '../../hooks/useRiskPool';
 import ExitFeeIndicator from '../../components/pool/ExitFeeIndicator';
 

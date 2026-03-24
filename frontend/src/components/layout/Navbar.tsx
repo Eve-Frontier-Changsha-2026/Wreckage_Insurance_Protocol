@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { ConnectButton } from '@mysten/dapp-kit-react/ui';
+import { ConnectButton } from '@mysten/dapp-kit-react';
 
 const links = [
   { to: '/', label: 'Dashboard' },

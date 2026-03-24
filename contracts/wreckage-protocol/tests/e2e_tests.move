@@ -521,66 +521,7 @@ fun test_e2e_duplicate_character_policy_rejected() {
     scenario.end();
 }
 
-// ============================================================
-// E2E Test 6: Integration Mock — Salvage Bounty
-// ============================================================
-
-#[test]
-fun test_e2e_mock_salvage_bounty() {
-    let mut scenario = test_scenario::begin(ADMIN);
-
-    let nft = salvage_nft::mint(
-        test_helpers::in_game_id(1001),
-        test_helpers::in_game_id(42),
-        test_helpers::in_game_id(100),
-        1, 1000, 3_000_000_000,
-        scenario.ctx(),
-    );
-
-    let clk = clock::create_for_testing(scenario.ctx());
-    let bounty_req = integration::mock_create_salvage_bounty(&nft, 1_000_000_000, &clk);
-
-    assert!(integration::bounty_nft_id(&bounty_req) == salvage_nft::id(&nft));
-    assert!(integration::bounty_reward(&bounty_req) == 1_000_000_000);
-    // Deadline = 0 + 604800 (7 days)
-    assert!(integration::bounty_deadline(&bounty_req) == 604800);
-
-    salvage_nft::destroy(nft);
-    clk.destroy_for_testing();
-    scenario.end();
-}
-
-// ============================================================
-// E2E Test 7: Integration Mock — Fleet Insurance
-// ============================================================
-
-#[test]
-fun test_e2e_mock_fleet_insure() {
-    let scenario = test_scenario::begin(ADMIN);
-
-    let char_ids = vector[
-        test_helpers::in_game_id(1),
-        test_helpers::in_game_id(2),
-        test_helpers::in_game_id(3),
-    ];
-
-    let fleet_id = object::id_from_address(@0xF1);
-    let req = integration::create_fleet_request(
-        fleet_id, char_ids, 2, COVERAGE, true,
-    );
-
-    assert!(integration::fleet_id(&req) == fleet_id);
-    assert!(integration::fleet_risk_tier(&req) == 2);
-    assert!(integration::fleet_coverage_per_unit(&req) == COVERAGE);
-    assert!(integration::fleet_include_self_destruct(&req));
-    assert!(integration::fleet_character_ids(&req).length() == 3);
-
-    // Mock returns empty vector
-    let policy_ids = integration::mock_fleet_insure(req);
-    assert!(policy_ids.length() == 0);
-
-    scenario.end();
-}
+// E2E Tests 6-7 (integration mocks) removed — mock code trimmed for package size
 
 // ============================================================
 // MONKEY TESTS — Extreme Edge Cases

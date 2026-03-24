@@ -17,6 +17,7 @@ import {
   buildSettleAuction,
   buildDestroyUnsold,
 } from '../../lib/ptb/auction';
+import { buildSetItemPrice } from '../../lib/ptb/ssu';
 import { SHARED_OBJECTS } from '../../lib/contracts';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -326,6 +327,12 @@ export default function DemoPanel() {
   const [destroyAuctionId, setDestroyAuctionId] = useState('');
   const [destroyLoading, setDestroyLoading] = useState(false);
 
+  // ── Form state — Item Valuation ─────────────────────────────────────────
+  const [valAdminCapId, setValAdminCapId] = useState('');
+  const [valItemTypeId, setValItemTypeId] = useState('');
+  const [valPrice, setValPrice] = useState('');
+  const [valLoading, setValLoading] = useState(false);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   async function handleDeposit() {
@@ -420,6 +427,22 @@ export default function DemoPanel() {
       );
     } finally {
       setSettleLoading(false);
+    }
+  }
+
+  async function handleSetItemPrice() {
+    if (!valAdminCapId || !valItemTypeId || !valPrice) return;
+    setValLoading(true);
+    try {
+      await execute('Set Item Price', () =>
+        buildSetItemPrice({
+          adminCapId: valAdminCapId,
+          itemTypeId: parseInt(valItemTypeId, 10),
+          pricePerUnit: suiToMist(valPrice),
+        })
+      );
+    } finally {
+      setValLoading(false);
     }
   }
 
@@ -775,6 +798,50 @@ export default function DemoPanel() {
               disabled={!settleAuctionId || !settlePoolId}
             >
               Settle Auction
+            </ExecButton>
+          </div>
+
+          <div className="border-t border-gray-800" />
+
+          {/* Set Item Price (EVE Valuation) */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-300">
+              Set Item Price (EVE Valuation Oracle)
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="col-span-2">
+                <Label>AdminCap Object ID</Label>
+                <Input
+                  value={valAdminCapId}
+                  onChange={setValAdminCapId}
+                  placeholder="0x…"
+                />
+              </div>
+              <div>
+                <Label>Item Type ID</Label>
+                <Input
+                  value={valItemTypeId}
+                  onChange={setValItemTypeId}
+                  placeholder="e.g. 5555"
+                  type="number"
+                />
+              </div>
+              <div>
+                <Label>Price Per Unit (SUI)</Label>
+                <Input
+                  value={valPrice}
+                  onChange={setValPrice}
+                  placeholder="1.0"
+                  type="number"
+                />
+              </div>
+            </div>
+            <ExecButton
+              onClick={handleSetItemPrice}
+              loading={valLoading}
+              disabled={!valAdminCapId || !valItemTypeId || !valPrice}
+            >
+              Set Item Price
             </ExecButton>
           </div>
 

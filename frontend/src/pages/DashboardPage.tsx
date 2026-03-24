@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
-import { ConnectButton } from '@mysten/dapp-kit-react/ui';
+import { ConnectButton } from '@mysten/dapp-kit-react';
 import { useProtocolConfig } from '../hooks/useProtocolConfig';
 import { useOwnedPolicies } from '../hooks/useInsurancePolicy';
 import { useOwnedLPPositions } from '../hooks/useRiskPool';
 import { useAuctionRegistry } from '../hooks/useAuction';
+import { GameWorldContext } from '../components/eve/GameWorldContext';
 import { SHARED_OBJECTS } from '../lib/contracts';
 
 const MIST = 1_000_000_000;
@@ -57,6 +59,7 @@ export default function DashboardPage() {
   const { data: policies, isLoading: policiesLoading } = useOwnedPolicies();
   const { data: positions, isLoading: positionsLoading } = useOwnedLPPositions();
   const { data: registryObj } = useAuctionRegistry();
+  const [exploreSsuId, setExploreSsuId] = useState('');
 
   if (!account) {
     return (
@@ -185,6 +188,30 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* EVE Frontier Integration */}
+      <div className="bg-gray-900 border border-gray-800 rounded-lg p-5">
+        <h2 className="text-lg font-semibold text-gray-100 mb-3">EVE Frontier Integration</h2>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1" htmlFor="explore-ssu">
+              Explore SSU (paste object ID)
+            </label>
+            <input
+              id="explore-ssu"
+              type="text"
+              value={exploreSsuId}
+              onChange={(e) => setExploreSsuId(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-orange-500"
+              placeholder="0x…"
+            />
+          </div>
+          <GameWorldContext ssuObjectId={exploreSsuId || undefined} />
+          {!exploreSsuId && (
+            <p className="text-xs text-gray-600">Enter an SSU object ID to view game world context</p>
+          )}
+        </div>
+      </div>
 
       {/* Quick Links */}
       <div>

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
-import { ConnectButton } from '@mysten/dapp-kit-react/ui';
+import { ConnectButton } from '@mysten/dapp-kit-react';
 import { useOwnedPolicies, usePurchasePolicy } from '../../hooks/useInsurancePolicy';
 import PolicyCard from '../../components/policy/PolicyCard';
 import RiskTierSelector, { TIER_RATES } from '../../components/policy/RiskTierSelector';
 import RiderToggle from '../../components/policy/RiderToggle';
+import { SSUStatusCard } from '../../components/eve/SSUStatusCard';
+import { CharacterBadge } from '../../components/eve/CharacterBadge';
 import type { RiskTier } from '../../lib/types';
 
 const MIST_PER_SUI = 1_000_000_000n;
@@ -28,6 +30,7 @@ export default function InsurePage() {
   const [coverageSui, setCoverageSui] = useState('100');
   const [tier, setTier] = useState<RiskTier>(0);
   const [sdRider, setSdRider] = useState(false);
+  const [ssuObjectId, setSsuObjectId] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const coverageNum = parseFloat(coverageSui) || 0;
@@ -125,6 +128,25 @@ export default function InsurePage() {
         )}
       </section>
 
+      {/* EVE Frontier SSU Context */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-200">EVE Frontier SSU</h2>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="ssu-id">
+            SSU Object ID (optional)
+          </label>
+          <input
+            id="ssu-id"
+            type="text"
+            value={ssuObjectId}
+            onChange={(e) => setSsuObjectId(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-gray-100 text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
+            placeholder="0x… (leave empty for direct contract calls)"
+          />
+        </div>
+        <SSUStatusCard ssuObjectId={ssuObjectId || undefined} />
+      </section>
+
       {/* Purchase form */}
       <section>
         <h2 className="text-lg font-semibold text-gray-200 mb-4">Purchase New Policy</h2>
@@ -176,9 +198,12 @@ export default function InsurePage() {
 
           {/* Character ID */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="character-id">
-              Character Object ID
-            </label>
+            <div className="flex items-center gap-2 mb-1">
+              <label className="block text-sm font-medium text-gray-300" htmlFor="character-id">
+                Character Object ID
+              </label>
+              <CharacterBadge characterObjectId={characterId || undefined} />
+            </div>
             <input
               id="character-id"
               type="text"

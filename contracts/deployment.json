@@ -1,40 +1,46 @@
 {
   "network": "testnet",
-  "deployedAt": "2026-03-23",
+  "deployedAt": "2026-03-24",
   "deployer": "0x1509b5fdf09296b2cf749a710e36da06f5693ccd5b2144ad643b3a895abcbc4c",
-  "packageId": "0xc4a0468d35e9c0e8e85201a00897f3ca6ac69cec3e4ee7721dc96a7a4a572bf6",
-  "transactionDigest": "8wYBpga21mabufsaQKpRkKewyLA46AJX858KBkJGRopS",
+  "packageId": "0xbb2f732232d0bf4b3c7b91cce214635e329952ff9acea810963c56cc8d28ac41",
+  "transactionDigest": "BrqfEiNGwvNwQbaEX5wB1xUd8nngPgVyFdXGQ22nBpoE",
   "modules": [
     "access", "anti_fraud", "assembly", "auction", "character", "claims",
     "config", "energy", "errors", "extension_freeze", "fuel", "gate",
-    "in_game_id", "init", "integration", "inventory", "killmail",
-    "killmail_registry", "location", "metadata", "network_node",
+    "in_game_id", "init", "integration", "inventory", "item_valuation",
+    "killmail", "killmail_registry", "location", "metadata", "network_node",
     "object_registry", "policy", "pool_config", "registry", "rider",
-    "risk_pool", "salvage", "salvage_nft", "sig_verify", "status",
-    "storage_unit", "subrogation", "turret", "underwriting", "world"
+    "risk_pool", "salvage", "salvage_nft", "sig_verify", "ssu_extension",
+    "status", "storage_unit", "subrogation", "turret", "underwriting", "world"
   ],
   "objects": {
-    "upgradeCap": "0x356317d241cc6ae41a1ee865ec91c010e1cdc65b29a791442cdb335767441c96",
-    "adminCap": "0xbdf8b7ae6c9167ef51ea6a37d9580167bc2d9ebb7a6cbce749f98be1b3396fd3",
-    "protocolConfig": "0x92cfd541600b883ba0a2532c69d77c939114f620d176bbcb0fbb0528e398a3da",
-    "policyRegistry": "0xdab997bfd2c671e40c59c096e5c8b580018c791db9b76db50f20463f7efc4b7b",
-    "claimRegistry": "0xdffef875036b20bb98f2ab9793734411fce69b634dc95adf6aa826640edd44b6",
-    "auctionRegistry": "0x22662b09a97dd23567eb77cf1cfee854e47c868e2c04acefa745bdf784f5f0a0",
-    "adminACL": "0x291cc3366e5e31584ede0494d84aeda2bf8f09bc37a4c91225a4a8caa561aa91",
-    "serverAddressRegistry": "0x98807e5f835591d13a9a3306c4b53cea39c48c91d52e1c7275b9cc7cb432142e",
-    "governorCap": "0x3ded4729d56c8bd231a406257aff0b5d24176856b0b9863f3d0bf6f0610b8ee0"
+    "upgradeCap": "0x3739533d271b68d15bb5f1a28bc89e2f7a32d8cacf666c59c40022eb05f03179",
+    "adminCap": "0x8fe5a8540278123465958930271f79448934b31873a86225a7c02c7591fc2038",
+    "protocolConfig": "0x0e9ca9dbc87e828f907f0c8011973a9ba5ee8d3c1e0bea08b42f050a622d4523",
+    "policyRegistry": "0x11903d4c33205930b2fd9f79cbf2899d301940a4dc79b01e76981ab3806fbef8",
+    "claimRegistry": "0xe42f02223e9e635a2b03c9e3337fdcba0fb1a9bb7fba469df17bb70c142d8036",
+    "auctionRegistry": "0x682807b31effdf6160e296b00012331b3a58b8560b102f733dfc6919944e29f9",
+    "valuationRegistry": "0x0a617a6b38cbe66b8f0e00d9b10daf3f6383bf62c9e13ad3de6d89716f99f77a",
+    "adminACL": "0xbbb9c276590bff270164f0052f4c41d6d245dab72fcb4ba74c31fc04d381c0f7",
+    "serverAddressRegistry": "0x48913c260e24e1817c4015d34328972bd33546368bedf60b8febcb3d9497f88e",
+    "governorCap": "0x432e95df0828dd2502f174fc568434c2e48dd26db47567f2db123ad6d7493716"
   },
   "worldObjects": {
-    "fuelConfig": "0x62b106f29a6d04cb31b8c7ad942cefc0963cbcb8ac9806875404957cbec6ce0f",
-    "gateConfig": "0x471b140d07665287981b89f2af3ba4bd57ca4190d0a275d906f5c5a1b61dbf2e",
-    "killmailRegistry": "0xb016b41129bf82f938da22419bd71a69427c6f723850379621e7f8539441193a",
-    "locationRegistry": "0x70f6209e33abfcbbf76ee4f31267be78a5eff6b6faf354891d1ba8a2a47643a3",
-    "energyConfig": "0x2e9456d0ecbd194166ef13b8678c476955ddacd6fff59295988ab96e2add5e1b",
-    "objectRegistry": "0xfffdca9e0030e3876befe2d754fc9312728309a96abda1b28e06dedf7e8076a5"
+    "fuelConfig": "0xc9f3bc82be39adce1dcec106dfb407617ead1eec59cd86d0c2e08c42d3c82613",
+    "gateConfig": "0xd6e52bfdafd10682c893963ff76659ef866c073c1ce549e3765fa6712c055e58",
+    "killmailRegistry": "0x0c54bb0a04553283554cf4add413144ba98b2476ceda75833fa2a1da8f2831ab",
+    "locationRegistry": "0xa04b6551265609e1c77f2f0e25e9964d1df9825d2a94c753b6f4e35d36d9d949",
+    "energyConfig": "0xe513cb5add3a5084b4163668dc5be1d81f698b64ef1eb9a7b51b49e5e9e6aff5",
+    "objectRegistry": "0x193ad59dc6d6977ae412ae0027a0fb7cd65f2d40489e19714b7c6601aeec584c"
   },
-  "gasUsed": "0.806 SUI",
-  "notes": "Redeployment v5: cancel_policy, protocol fee split, NCB off-by-one fix. Fresh publish required (InsurancePolicy struct change — claims_at_last_renewal field added).",
+  "gasUsed": "0.810 SUI",
+  "notes": "Redeployment v6: EVE SDK integration — ssu_extension + item_valuation modules, ValuationRegistry shared object. Package size optimization: removed unused error constants + integration mocks to fit 100KB limit.",
   "previousDeployments": {
+    "v5-2026-03-23": {
+      "packageId": "0xc4a0468d35e9c0e8e85201a00897f3ca6ac69cec3e4ee7721dc96a7a4a572bf6",
+      "upgradeCap": "0x356317d241cc6ae41a1ee865ec91c010e1cdc65b29a791442cdb335767441c96",
+      "note": "Pre-EVE-SDK, cancel_policy + protocol fee + NCB fix"
+    },
     "v4-2026-03-23": {
       "packageId": "0x325012f5213ee7398ac7ec950291ba1013212c38a772387b3d0473a3ad75a1f7",
       "upgradeCap": "0x2c7802ba9110d379b1a5c8377114d1a770f8f7e5871924eb536a6bc51abc721c",
