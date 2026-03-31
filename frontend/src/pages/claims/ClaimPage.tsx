@@ -5,12 +5,12 @@ import { ConnectButton } from '@mysten/dapp-kit-react';
 import { useOwnedPolicies } from '../../hooks/useInsurancePolicy';
 import { useSubmitClaim, useSubmitSelfDestructClaim } from '../../hooks/useClaims';
 import {
-  useCharacterKillmails,
+  useMyKillmails,
   useOnChainKillmails,
-  resolveUtopiaToOnChain,
-  type UtopiaKillmail,
+  resolveToOnChain,
+  type EveEyesKillmail,
 } from '../../hooks/useKillmail';
-import { useGameCharacter } from '../../hooks/useGameCharacter';
+import { useSolarSystemNames } from '../../hooks/useSolarSystem';
 import { useDiscoverPools } from '../../hooks/useDiscoverPools';
 import { TIER_NAMES } from '../../lib/types';
 
@@ -37,12 +37,11 @@ export default function ClaimPage() {
   const submitSelfDestruct = useSubmitSelfDestructClaim();
   const { data: pools } = useDiscoverPools();
 
-  const { data: gameCharacter, isLoading: charLoading } = useGameCharacter();
-  const gameCharacterId = gameCharacter?.id;
-
   const [selectedPolicyId, setSelectedPolicyId] = useState<string>(urlPolicyId);
-  const [selectedUtopiaIdx, setSelectedUtopiaIdx] = useState<number>(-1);
+  const [selectedKillmailIdx, setSelectedKillmailIdx] = useState<number>(-1);
+  const [killmailSearch, setKillmailSearch] = useState('');
   const [manualKillmailId, setManualKillmailId] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [poolId, setPoolId] = useState('');
   const [claimType, setClaimType] = useState<ClaimType>('normal');
   const [successDigest, setSuccessDigest] = useState<string | null>(null);
@@ -59,21 +58,43 @@ export default function ClaimPage() {
   const isActive = policyStatus === 'active' || policyStatus === '0'
     || Number(policyStatus) === 0;
 
-  // Fetch killmails for this character from Utopia indexer (auto-resolved game character ID)
-  const { data: killmails, isLoading: killmailsLoading } = useCharacterKillmails(
-    gameCharacterId,
-  );
-
-  // Fetch on-chain killmails from our protocol to resolve Sui object IDs
+  // Eve Eyes killmail feed — auto-filtered by connected wallet
+  const { data: killmails, isLoading: killmailsLoading } = useMyKillmails();
   const { data: onChainKillmails, isLoading: onChainLoading } = useOnChainKillmails();
 
-  // Resolve selected utopia killmail → on-chain Sui object ID
-  const selectedUtopia: UtopiaKillmail | undefined =
-    killmails && selectedUtopiaIdx >= 0 ? killmails[selectedUtopiaIdx] : undefined;
-  const resolvedOnChain = selectedUtopia
-    ? resolveUtopiaToOnChain(selectedUtopia.killedAt, onChainKillmails)
+  // Resolve solar system names for all killmails
+  const systemIds = useMemo(
+    () => (killmails ?? []).map((km) => km.solarSystemId),
+    [killmails],
+  );
+  const { data: systemNames } = useSolarSystemNames(systemIds);
+
+  // Filter killmails by search term
+  const filteredKillmails = useMemo(() => {
+    if (!killmails) return [];
+    if (!killmailSearch.trim()) return killmails;
+    const q = killmailSearch.toLowerCase();
+    return killmails.filter((km) => {
+      const sysName = systemNames?.get(km.solarSystemId)?.toLowerCase() ?? '';
+      return (
+        km.killer.label.toLowerCase().includes(q) ||
+        sysName.includes(q) ||
+        km.lossType.toLowerCase().includes(q) ||
+        km.killTimestamp.toLowerCase().includes(q)
+      );
+    });
+  }, [killmails, killmailSearch, systemNames]);
+
+  // Resolve selected killmail → on-chain Sui object ID
+  const selectedKillmail: EveEyesKillmail | undefined =
+    filteredKillmails && selectedKillmailIdx >= 0
+      ? filteredKillmails[selectedKillmailIdx]
+      : undefined;
+  const resolvedOnChain = selectedKillmail
+    ? resolveToOnChain(selectedKillmail, onChainKillmails)
     : undefined;
-  // The killmail ID to use in the PTB: resolved Sui object ID or manual input
+
+  // The killmail ID to use in the PTB
   const killmailId = resolvedOnChain?.suiObjectId ?? manualKillmailId;
 
   // Auto-fill pool ID from policy tier
@@ -159,7 +180,9 @@ export default function ClaimPage() {
             <button
               onClick={() => {
                 setSuccessDigest(null);
-                setSelectedUtopiaIdx(-1);
+                setSelectedKillmailIdx(-1);
+                setKillmailSearch('');
+                setShowAdvanced(false);
                 setManualKillmailId('');
                 setPoolId('');
               }}
@@ -212,10 +235,10 @@ export default function ClaimPage() {
                   const o = obj as Record<string, unknown>;
                   const id = o.objectId as string;
                   const fields = parsePolicyFields(obj);
-                  const tier = fields?.tier ?? fields?.risk_tier ?? '?';
+                  const tier = fields?.risk_tier ?? fields?.tier ?? '?';
                   const tierNum = Number(tier) as 0 | 1 | 2;
                   const status = (fields?.status as string | undefined) ?? '';
-                  const active = status === 'active' || status === '0';
+                  const active = status === 'active' || status === '0' || Number(status) === 0;
                   return (
                     <option key={id} value={id} disabled={!active}>
                       {truncate(id)} — {TIER_NAMES[tierNum] ?? `Tier ${tierNum}`}
@@ -257,68 +280,19 @@ export default function ClaimPage() {
           {/* Step 2: Killmail */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h2 className="text-orange-400 font-semibold text-sm uppercase tracking-wider mb-4">
-              Step 2 — Killmail
+              Step 2 — Select Killmail
             </h2>
 
-            {charLoading ? (
-              <p className="text-gray-500 text-sm">Resolving game character...</p>
-            ) : !gameCharacterId ? (
-              <p className="text-gray-500 text-sm">
-                No EVE character found for this wallet. You can paste a Killmail object ID manually below.
-              </p>
-            ) : null}
-
-            {gameCharacterId && killmails && killmails.length > 0 ? (
-              <>
+            {killmailsLoading ? (
+              <p className="text-gray-500 text-sm">Loading killmails...</p>
+            ) : !killmails || killmails.length === 0 ? (
+              <div>
+                <p className="text-gray-500 text-sm mb-3">
+                  No ship losses found for this wallet.
+                </p>
+                {/* Show advanced input directly when no killmails */}
                 <label className="block text-gray-400 text-xs mb-1">
-                  Select a killmail from your loss history
-                </label>
-                <select
-                  value={selectedUtopiaIdx}
-                  onChange={(e) => {
-                    setSelectedUtopiaIdx(Number(e.target.value));
-                    setManualKillmailId('');
-                  }}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
-                >
-                  <option value={-1}>— Select killmail —</option>
-                  {killmails.map((km, idx) => {
-                    const date = new Date(km.killedAt).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit',
-                    });
-                    return (
-                      <option key={km.id} value={idx}>
-                        {date} — killed by {km.killerName} ({km.lossType})
-                      </option>
-                    );
-                  })}
-                </select>
-                {selectedUtopia && (
-                  <div className="flex items-center gap-2 mt-1.5">
-                    {onChainLoading && <span className="text-[10px] text-gray-500">resolving on-chain...</span>}
-                    {!onChainLoading && resolvedOnChain && (
-                      <>
-                        <p className="text-[11px] text-gray-600 font-mono break-all">{resolvedOnChain.suiObjectId}</p>
-                        <span className="text-[10px] text-green-400 whitespace-nowrap">✓ on-chain</span>
-                      </>
-                    )}
-                    {!onChainLoading && !resolvedOnChain && (
-                      <span className="text-[10px] text-yellow-400 whitespace-nowrap">
-                        ✗ not registered on-chain yet
-                      </span>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <label className="block text-gray-400 text-xs mb-1">
-                  {killmailsLoading
-                    ? 'Loading killmails from indexer...'
-                    : gameCharacterId && killmails?.length === 0
-                    ? 'No killmails found for this character. Paste the Sui object ID manually:'
-                    : 'Paste the Killmail Sui object ID'}
+                  Paste the Killmail Sui Object ID
                 </label>
                 <input
                   type="text"
@@ -327,6 +301,119 @@ export default function ClaimPage() {
                   placeholder="0x..."
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-orange-500 placeholder-gray-600"
                 />
+              </div>
+            ) : (
+              <>
+                {/* Search box */}
+                <div className="relative mb-3">
+                  <input
+                    type="text"
+                    value={killmailSearch}
+                    onChange={(e) => {
+                      setKillmailSearch(e.target.value);
+                      setSelectedKillmailIdx(-1); // reset selection on search change
+                    }}
+                    placeholder="Search by killer, system, type..."
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 placeholder-gray-600"
+                  />
+                  <svg className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+
+                {/* Killmail cards */}
+                <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+                  {filteredKillmails.length === 0 ? (
+                    <p className="text-gray-600 text-xs py-2">No killmails match your search.</p>
+                  ) : (
+                    filteredKillmails.map((km, idx) => {
+                      const isSelected = selectedKillmailIdx === idx;
+                      const onChain = resolveToOnChain(km, onChainKillmails);
+                      const sysName = systemNames?.get(km.solarSystemId) ?? km.solarSystemId;
+                      const date = new Date(km.killTimestamp);
+                      const dateStr = date.toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric',
+                      });
+                      const timeStr = date.toLocaleTimeString('en-US', {
+                        hour: '2-digit', minute: '2-digit', hour12: false,
+                      });
+
+                      return (
+                        <button
+                          key={km.killmailItemId}
+                          type="button"
+                          onClick={() => {
+                            setSelectedKillmailIdx(isSelected ? -1 : idx);
+                            setManualKillmailId('');
+                            setShowAdvanced(false);
+                          }}
+                          disabled={!onChain && !onChainLoading}
+                          className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-500/10'
+                              : onChain
+                              ? 'border-gray-700 hover:border-gray-600 cursor-pointer'
+                              : 'border-gray-800 opacity-50 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-white text-sm font-medium">
+                              Killed by {km.killer.label}
+                            </span>
+                            <span className="text-gray-500 text-xs">
+                              {dateStr}, {timeStr}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-gray-400">{sysName}</span>
+                            <span className="text-gray-600">·</span>
+                            <span className="text-gray-400">{km.lossType}</span>
+                            <span className="text-gray-600">·</span>
+                            {onChainLoading ? (
+                              <span className="text-gray-500">resolving...</span>
+                            ) : onChain ? (
+                              <span className="text-green-400">on-chain</span>
+                            ) : (
+                              <span className="text-yellow-500">pending</span>
+                            )}
+                          </div>
+                          {isSelected && onChain && (
+                            <p className="mt-1.5 text-[10px] text-gray-600 font-mono break-all">
+                              {onChain.suiObjectId}
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Advanced fallback — collapsible */}
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="mt-3 text-gray-500 hover:text-gray-400 text-xs transition-colors flex items-center gap-1"
+                >
+                  <span className={`transition-transform ${showAdvanced ? 'rotate-90' : ''}`}>▸</span>
+                  Can't find your killmail?
+                </button>
+                {showAdvanced && (
+                  <div className="mt-2">
+                    <label className="block text-gray-400 text-xs mb-1">
+                      Paste the Killmail Sui Object ID directly
+                    </label>
+                    <input
+                      type="text"
+                      value={manualKillmailId}
+                      onChange={(e) => {
+                        setManualKillmailId(e.target.value);
+                        setSelectedKillmailIdx(-1);
+                      }}
+                      placeholder="0x..."
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-orange-500 placeholder-gray-600"
+                    />
+                  </div>
+                )}
               </>
             )}
           </div>
