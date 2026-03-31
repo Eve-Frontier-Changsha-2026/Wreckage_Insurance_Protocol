@@ -1,4 +1,4 @@
-const EVE_EYES_BASE = 'https://eve-eyes.d0v.xyz';
+const EVE_EYES_BASE = import.meta.env.DEV ? '/eve-eyes' : 'https://eve-eyes.d0v.xyz';
 const EVE_EYES_API_KEY = 'eve_ak_OGg2rSPof-S_13eN_kpDeIw4-rG5_q8leYZhdL2IV5w';
 
 const headers = {

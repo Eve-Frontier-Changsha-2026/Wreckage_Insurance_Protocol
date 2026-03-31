@@ -59,7 +59,7 @@ export default function ClaimPage() {
     || Number(policyStatus) === 0;
 
   // Eve Eyes killmail feed — auto-filtered by connected wallet
-  const { data: killmails, isLoading: killmailsLoading } = useMyKillmails();
+  const { data: killmails, isLoading: killmailsLoading, error: killmailError } = useMyKillmails();
   const { data: onChainKillmails, isLoading: onChainLoading } = useOnChainKillmails();
 
   // Resolve solar system names for all killmails
@@ -285,6 +285,11 @@ export default function ClaimPage() {
 
             {killmailsLoading ? (
               <p className="text-gray-500 text-sm">Loading killmails...</p>
+            ) : killmailError ? (
+              <div className="text-red-400 text-sm">
+                <p className="mb-1">Failed to load killmails:</p>
+                <p className="text-xs text-red-500 font-mono">{String(killmailError)}</p>
+              </div>
             ) : !killmails || killmails.length === 0 ? (
               <div>
                 <p className="text-gray-500 text-sm mb-3">
