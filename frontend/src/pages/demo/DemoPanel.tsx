@@ -19,6 +19,8 @@ import {
 } from '../../lib/ptb/auction';
 import { buildSetItemPrice } from '../../lib/ptb/ssu';
 import { buildAdminCreatePool, TIER_PRESETS } from '../../lib/ptb/admin';
+import { buildCreateKillmail } from '../../lib/ptb/killmail';
+import { fetchKillmails, type EveEyesKillmail } from '../../lib/eveEyes';
 import { ADMIN_CAP, SHARED_OBJECTS } from '../../lib/contracts';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -339,6 +341,13 @@ export default function DemoPanel() {
   const [valPrice, setValPrice] = useState('');
   const [valLoading, setValLoading] = useState(false);
 
+  // ── Form state — Create Killmail ─────────────────────────────────────────
+  const [kmCharObjectId, setKmCharObjectId] = useState('');
+  const [kmSelectedIdx, setKmSelectedIdx] = useState(-1);
+  const [kmKillmails, setKmKillmails] = useState<EveEyesKillmail[]>([]);
+  const [kmFetchLoading, setKmFetchLoading] = useState(false);
+  const [kmLoading, setKmLoading] = useState(false);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   async function handleDeposit() {
@@ -478,6 +487,40 @@ export default function DemoPanel() {
       );
     } finally {
       setDestroyLoading(false);
+    }
+  }
+
+  async function handleFetchKillmails() {
+    setKmFetchLoading(true);
+    try {
+      const items = await fetchKillmails(50);
+      setKmKillmails(items);
+      setKmSelectedIdx(-1);
+    } catch (err) {
+      toast(`Failed to fetch killmails: ${err}`, 'err');
+    } finally {
+      setKmFetchLoading(false);
+    }
+  }
+
+  async function handleCreateKillmail() {
+    const km = kmKillmails[kmSelectedIdx];
+    if (!km || !kmCharObjectId) return;
+    setKmLoading(true);
+    try {
+      await execute('Create Killmail On-Chain', () =>
+        buildCreateKillmail({
+          characterObjectId: kmCharObjectId,
+          itemId: km.killmailItemId,
+          killerId: km.killer.characterItemId,
+          victimId: km.victim.characterItemId,
+          killTimestamp: Math.floor(new Date(km.killTimestamp).getTime() / 1000),
+          lossType: km.lossType === 'SHIP' ? 0 : 1,
+          solarSystemId: km.solarSystemId,
+        })
+      );
+    } finally {
+      setKmLoading(false);
     }
   }
 
@@ -930,6 +973,77 @@ export default function DemoPanel() {
               disabled={!destroyAuctionId}
             >
               Destroy Unsold
+            </ExecButton>
+          </div>
+
+          <div className="border-t border-gray-800" />
+
+          {/* Create Killmail On-Chain */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-300">
+              Create Killmail On-Chain
+            </p>
+            <p className="text-xs text-gray-500">
+              Registers an Eve Eyes killmail as a shared Killmail object on SUI.
+              Requires AdminACL sponsor (deployer wallet).
+            </p>
+
+            <div>
+              <Label>Reporter Character Object ID</Label>
+              <Input
+                value={kmCharObjectId}
+                onChange={setKmCharObjectId}
+                placeholder="0x… (shared Character object)"
+              />
+            </div>
+
+            <ExecButton
+              onClick={handleFetchKillmails}
+              loading={kmFetchLoading}
+            >
+              Fetch Eve Eyes Killmails
+            </ExecButton>
+
+            {kmKillmails.length > 0 && (
+              <>
+                <Label>Select Killmail</Label>
+                <select
+                  value={kmSelectedIdx}
+                  onChange={(e) => setKmSelectedIdx(Number(e.target.value))}
+                  className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-orange-500"
+                >
+                  <option value={-1}>— Select —</option>
+                  {kmKillmails.map((km, idx) => {
+                    const date = new Date(km.killTimestamp).toLocaleString('en-US', {
+                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                    });
+                    return (
+                      <option key={km.killmailItemId} value={idx}>
+                        #{km.killmailItemId} — {km.victim.label} killed by {km.killer.label} ({date})
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {kmSelectedIdx >= 0 && kmKillmails[kmSelectedIdx] && (
+                  <div className="text-xs text-gray-500 bg-gray-900 rounded p-2 space-y-0.5">
+                    <p>Item ID: <span className="text-gray-300">{kmKillmails[kmSelectedIdx].killmailItemId}</span></p>
+                    <p>Killer: <span className="text-gray-300">{kmKillmails[kmSelectedIdx].killer.label} ({kmKillmails[kmSelectedIdx].killer.characterItemId})</span></p>
+                    <p>Victim: <span className="text-gray-300">{kmKillmails[kmSelectedIdx].victim.label} ({kmKillmails[kmSelectedIdx].victim.characterItemId})</span></p>
+                    <p>Timestamp: <span className="text-gray-300">{kmKillmails[kmSelectedIdx].killTimestamp}</span></p>
+                    <p>System: <span className="text-gray-300">{kmKillmails[kmSelectedIdx].solarSystemId}</span></p>
+                    <p>Loss Type: <span className="text-gray-300">{kmKillmails[kmSelectedIdx].lossType}</span></p>
+                  </div>
+                )}
+              </>
+            )}
+
+            <ExecButton
+              onClick={handleCreateKillmail}
+              loading={kmLoading}
+              disabled={!kmCharObjectId || kmSelectedIdx < 0}
+            >
+              Create Killmail On-Chain
             </ExecButton>
           </div>
         </Section>
