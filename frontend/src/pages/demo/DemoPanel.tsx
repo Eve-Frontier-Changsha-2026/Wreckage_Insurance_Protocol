@@ -19,7 +19,7 @@ import {
 } from '../../lib/ptb/auction';
 import { buildSetItemPrice } from '../../lib/ptb/ssu';
 import { buildAdminCreatePool, TIER_PRESETS } from '../../lib/ptb/admin';
-import { buildCreateKillmail } from '../../lib/ptb/killmail';
+import { buildCreateKillmail, buildCreateAndShareCharacter } from '../../lib/ptb/killmail';
 import { fetchKillmails, type EveEyesKillmail } from '../../lib/eveEyes';
 import { ADMIN_CAP, SHARED_OBJECTS } from '../../lib/contracts';
 
@@ -341,6 +341,13 @@ export default function DemoPanel() {
   const [valPrice, setValPrice] = useState('');
   const [valLoading, setValLoading] = useState(false);
 
+  // ── Form state — Create Character ────────────────────────────────────────
+  const [charGameId, setCharGameId] = useState('');
+  const [charTenant, setCharTenant] = useState('evefrontier');
+  const [charName, setCharName] = useState('');
+  const [charAddress, setCharAddress] = useState('');
+  const [charLoading, setCharLoading] = useState(false);
+
   // ── Form state — Create Killmail ─────────────────────────────────────────
   const [kmCharObjectId, setKmCharObjectId] = useState('');
   const [kmSelectedIdx, setKmSelectedIdx] = useState(-1);
@@ -487,6 +494,24 @@ export default function DemoPanel() {
       );
     } finally {
       setDestroyLoading(false);
+    }
+  }
+
+  async function handleCreateCharacter() {
+    if (!charGameId || !charName || !charAddress) return;
+    setCharLoading(true);
+    try {
+      await execute('Create & Share Character', () =>
+        buildCreateAndShareCharacter({
+          gameCharacterId: Number(charGameId),
+          tenant: charTenant || 'evefrontier',
+          tribeId: 1,
+          characterAddress: charAddress,
+          name: charName,
+        })
+      );
+    } finally {
+      setCharLoading(false);
     }
   }
 
@@ -973,6 +998,61 @@ export default function DemoPanel() {
               disabled={!destroyAuctionId}
             >
               Destroy Unsold
+            </ExecButton>
+          </div>
+
+          <div className="border-t border-gray-800" />
+
+          {/* Create Character (prerequisite for killmail) */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-300">
+              Create Character (World Object)
+            </p>
+            <p className="text-xs text-gray-500">
+              Creates a shared Character object. Needed as reporter for killmail creation.
+              Check tx effects for the created Character object ID.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Game Character ID</Label>
+                <Input
+                  value={charGameId}
+                  onChange={setCharGameId}
+                  placeholder="e.g. 2112000187"
+                  type="number"
+                />
+              </div>
+              <div>
+                <Label>Character Name</Label>
+                <Input
+                  value={charName}
+                  onChange={setCharName}
+                  placeholder="e.g. ramonliao"
+                />
+              </div>
+              <div>
+                <Label>Wallet Address</Label>
+                <Input
+                  value={charAddress}
+                  onChange={setCharAddress}
+                  placeholder="0x…"
+                />
+              </div>
+              <div>
+                <Label>Tenant</Label>
+                <Input
+                  value={charTenant}
+                  onChange={setCharTenant}
+                  placeholder="evefrontier"
+                />
+              </div>
+            </div>
+            <ExecButton
+              onClick={handleCreateCharacter}
+              loading={charLoading}
+              disabled={!charGameId || !charName || !charAddress}
+            >
+              Create & Share Character
             </ExecButton>
           </div>
 
