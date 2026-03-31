@@ -1,8 +1,6 @@
 // contracts/wreckage-core/sources/policy.move
 module wreckage_protocol::policy;
 
-use world::in_game_id::TenantItemId;
-
 // === Constants ===
 const STATUS_ACTIVE: u8 = 0;
 const STATUS_CLAIMED: u8 = 1;
@@ -12,7 +10,7 @@ const STATUS_CANCELLED: u8 = 3;
 // === Structs ===
 public struct InsurancePolicy has key, store {
     id: UID,
-    insured_character_id: TenantItemId,
+    insured_character_id: address,
     coverage_amount: u64,
     premium_paid: u64,
     risk_tier: u8,
@@ -33,7 +31,7 @@ public struct InsurancePolicy has key, store {
 // === Events ===
 public struct PolicyCreatedEvent has copy, drop {
     policy_id: ID,
-    insured_character_id: TenantItemId,
+    insured_character_id: address,
     coverage_amount: u64,
     premium_paid: u64,
     risk_tier: u8,
@@ -56,7 +54,7 @@ public struct PolicyTransferredEvent has copy, drop {
 
 public struct PolicyCancelledEvent has copy, drop {
     policy_id: ID,
-    character_id: TenantItemId,
+    character_id: address,
     cancelled_at: u64,
 }
 
@@ -68,7 +66,7 @@ public fun status_cancelled(): u8 { STATUS_CANCELLED }
 
 // === Constructor (package-only — blocks external forging of fake policies) ===
 public(package) fun create(
-    insured_character_id: TenantItemId,
+    insured_character_id: address,
     coverage_amount: u64,
     premium_paid: u64,
     risk_tier: u8,
@@ -112,7 +110,7 @@ public(package) fun create(
 
 // === Accessors ===
 public fun id(p: &InsurancePolicy): ID { object::id(p) }
-public fun insured_character_id(p: &InsurancePolicy): TenantItemId { p.insured_character_id }
+public fun insured_character_id(p: &InsurancePolicy): address { p.insured_character_id }
 public fun coverage_amount(p: &InsurancePolicy): u64 { p.coverage_amount }
 public fun premium_paid(p: &InsurancePolicy): u64 { p.premium_paid }
 public fun risk_tier(p: &InsurancePolicy): u8 { p.risk_tier }
@@ -167,7 +165,7 @@ public(package) fun emit_transferred_event(policy_id: ID, from: address, to: add
     sui::event::emit(PolicyTransferredEvent { policy_id, from, to });
 }
 
-public(package) fun emit_cancelled_event(policy_id: ID, character_id: TenantItemId, cancelled_at: u64) {
+public(package) fun emit_cancelled_event(policy_id: ID, character_id: address, cancelled_at: u64) {
     sui::event::emit(PolicyCancelledEvent { policy_id, character_id, cancelled_at });
 }
 

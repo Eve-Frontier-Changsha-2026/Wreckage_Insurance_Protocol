@@ -6,12 +6,13 @@ const CLOCK = '0x6';
 export function buildDeposit(args: {
   poolId: string;
   amountMist: bigint;
+  senderAddress: string;
 }) {
   const tx = new Transaction();
 
   const [depositCoin] = tx.splitCoins(tx.gas, [args.amountMist]);
 
-  tx.moveCall({
+  const [position] = tx.moveCall({
     target: `${PACKAGE_ID}::risk_pool::deposit`,
     arguments: [
       tx.object(args.poolId),
@@ -20,6 +21,8 @@ export function buildDeposit(args: {
     ],
   });
 
+  tx.transferObjects([position], tx.pure.address(args.senderAddress));
+
   return tx;
 }
 
@@ -27,10 +30,11 @@ export function buildWithdraw(args: {
   poolId: string;
   positionId: string;
   sharesToBurn: bigint;
+  senderAddress: string;
 }) {
   const tx = new Transaction();
 
-  tx.moveCall({
+  const [coin] = tx.moveCall({
     target: `${PACKAGE_ID}::risk_pool::withdraw`,
     arguments: [
       tx.object(args.poolId),
@@ -39,6 +43,8 @@ export function buildWithdraw(args: {
       tx.object(CLOCK),
     ],
   });
+
+  tx.transferObjects([coin], tx.pure.address(args.senderAddress));
 
   return tx;
 }

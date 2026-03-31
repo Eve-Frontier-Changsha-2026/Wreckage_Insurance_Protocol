@@ -14,7 +14,7 @@ public struct ClaimRegistry has key {
 // === PolicyRegistry ===
 public struct PolicyRegistry has key {
     id: UID,
-    active_policies: Table<TenantItemId, ID>, // character_id → policy_id
+    active_policies: Table<address, ID>, // insured_address → policy_id
     version: u64,
 }
 
@@ -55,13 +55,13 @@ public(package) fun record_claim(
 }
 
 // === PolicyRegistry Functions ===
-public fun has_active_policy(registry: &PolicyRegistry, character_id: TenantItemId): bool {
+public fun has_active_policy(registry: &PolicyRegistry, character_id: address): bool {
     registry.active_policies.contains(character_id)
 }
 
 public(package) fun register_policy(
     registry: &mut PolicyRegistry,
-    character_id: TenantItemId,
+    character_id: address,
     policy_id: ID,
 ) {
     assert!(
@@ -73,7 +73,7 @@ public(package) fun register_policy(
 
 public(package) fun unregister_policy(
     registry: &mut PolicyRegistry,
-    character_id: TenantItemId,
+    character_id: address,
 ) {
     if (registry.active_policies.contains(character_id)) {
         registry.active_policies.remove(character_id);

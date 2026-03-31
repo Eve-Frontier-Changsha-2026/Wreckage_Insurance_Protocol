@@ -2,7 +2,7 @@
 
 > 純使用者視角的手動測試步驟。
 > 所有操作都在瀏覽器 + 錢包完成，不需要打任何 CLI 指令。
-> 測試環境：SUI Testnet，合約 v6。
+> 測試環境：SUI Testnet，合約 v7。
 
 ---
 
@@ -10,6 +10,7 @@
 
 1. [測試前準備](#1-測試前準備)
 2. [T-0: 冷啟動 — 未連接錢包](#2-t-0-冷啟動--未連接錢包)
+2.5. [T-0.5: Admin Bootstrap — 建立 Risk Pools](#25-t-05-admin-bootstrap--建立-risk-pools)
 3. [T-1: 連接錢包](#3-t-1-連接錢包)
 4. [T-2: Dashboard 總覽](#4-t-2-dashboard-總覽)
 5. [T-3: LP 存款 — 注入流動性](#5-t-3-lp-存款--注入流動性)
@@ -57,11 +58,11 @@
 
 測試過程中會用到以下 Object ID，請先記錄在[記錄表](#22-測試用-object-id-記錄表)：
 
-- **Pool ID**（每個 tier 各一個）— Admin 預先建立
+- **Pool ID**（每個 tier 各一個）— Admin 在 T-0.5 透過 DemoPanel 建立（前端會自動 discover）
 - **Character Object ID** — EVE Frontier 角色物件
 - **Killmail Object ID** — 理賠時需要
 
-> 這些 ID 由 Claude 或 Admin 透過 CLI 預先建立，測試者只需要拿到 ID 貼進前端。
+> Pool 由 Admin 在 T-0.5 建立，前端會自動偵測。Character 和 Killmail 仍需手動取得。
 
 ---
 
@@ -77,19 +78,55 @@
 | 點擊 | 看到 | Pass? |
 |------|------|-------|
 | **Dashboard** | 頁面載入，顯示 "Connect your wallet to get started" 和 ConnectButton | ☐ |
-| **Insure** | 顯示 "Connect your wallet to manage insurance policies" | ☐ |
+| **Insure** | 顯示 "Connect your wallet to manage insurance policies" + ConnectButton | ☐ |
 | **Claims** | 顯示 "Connect your wallet to submit a claim." | ☐ |
 | **LP Pool** | 顯示 "Connect your wallet to view the LP pool." | ☐ |
 | **Salvage** | 頁面載入，顯示拍賣列表（拍賣是公開的，不需錢包） | ☐ |
 | **Demo** | 顯示 "Connect wallet to use demo panel" | ☐ |
 
 3. 打開 DevTools → Console，確認 **0 個紅色錯誤**
+   - SmartObjectProvider 已移除，不應有 "No object ID" noise
 
 ### 預期
 
 - 所有頁面都有友善的未連接提示
 - 沒有任何白屏或 JavaScript error
+- Console 無紅色 error（info/debug level log 可接受）
 - Navbar 的 "WIP" logo 和所有導航連結可見
+
+---
+
+## 2.5. T-0.5: Admin Bootstrap — 建立 Risk Pools
+
+> 目標：Admin 透過 DemoPanel 建立 3 個 tier 的 Risk Pool，讓後續測試能正常運作。
+> 路由：`/demo`
+> 前置條件：Admin 帳號（擁有 AdminCap）已連接錢包。
+
+### 步驟
+
+1. 以 Admin 帳號連接錢包 → 前往 `/demo`
+2. 展開 **3. Admin Actions**
+3. 在 "Create Risk Pool" 區塊：
+   - **AdminCap ID**：已自動帶入 `deployment.json` 的 AdminCap 地址（確認欄位有值即可）
+   - **Tier**：選擇 **Tier 0 — Low Risk**
+   - 點擊 **Create Pool** → 錢包簽名
+4. 等 Transaction Log 顯示綠色 ✓ **Create Pool (Tier 0) succeeded**
+5. 重複步驟 3-4，分別選擇 **Tier 1 — Medium Risk** 和 **Tier 2 — High Risk**
+
+### 驗證
+
+| 項目 | 預期結果 | Pass? |
+|------|---------|-------|
+| Tx Log 顯示 3 筆成功 | 綠色 ✓ × 3 | ☐ |
+| 前往 `/pool` | PoolSelector dropdown 列出 3 個 pools | ☐ |
+| 前往 `/pool/deposit` | PoolSelector dropdown 列出 3 個 pools | ☐ |
+| 前往 `/insure` | 切換 tier 時自動顯示對應 pool | ☐ |
+
+### 記錄 Pool IDs
+
+從 Transaction Log 或鏈上 explorer 取得 3 個 Pool Object IDs，記錄在[記錄表](#22-測試用-object-id-記錄表)。
+
+> 完成 T-0.5 後，後續所有涉及 Pool ID 的步驟都可從 dropdown 選取，不再需要手動貼 ID。
 
 ---
 
@@ -158,9 +195,9 @@
 1. 點擊 Navbar **LP Pool** → 點擊右上角 **Deposit** 按鈕（或從 Dashboard 點 "Provide Liquidity"）
 2. 看到標題 **"Deposit SUI"** 和副標題 "Provide liquidity to the risk pool and earn LP shares."
 
-3. **Step 1 — Pool ID**：
-   - 在輸入框貼入 **Tier 0 Pool 的 Object ID**（從[記錄表](#22-測試用-object-id-記錄表)取得）
-   - 點擊 **Load** 按鈕
+3. **Step 1 — Select Pool**：
+   - 從 **PoolSelector** dropdown 選取 **Tier 0 — Low Risk** pool（auto-discover，不需手動貼 ID）
+   - 如果 dropdown 為空 → 需先完成 T-0.5 建立 pools
 
 4. 觀察 Pool 資訊載入：
 
@@ -199,57 +236,117 @@
 
 ---
 
-## 6. T-4: 購買保單
+## 6. T-4: 購買保單（3-Step Wizard）
 
 > 路由：`/insure`
+> 頁面改為 3 步驟精靈：**Risk Level → Coverage & Options → Review & Purchase**
 
 ### 步驟
 
 1. 點擊 Navbar **Insure**
-2. 上方先看到 "Your Policies" 區塊 → 目前應為 "No policies found. Purchase one below."
+2. 看到標題 **"Purchase Insurance"** 和 Stepper 指示器（步驟 1 橘色高亮）
+3. 往下滾到底部看 **"Your Policies"** 區塊 → 目前應為 "No policies found. Purchase one above."
 
-3. 往下滾到 **"Purchase New Policy"** 表單
+---
 
-4. **選擇風險等級**（RiskTierSelector）：
-   - 點擊 **Tier 0 — Low Risk** → 確認顯示 "5.00%"、"Selected" 標記
-   - 點擊 **Tier 1 — Medium Risk** → 確認切換到 "8.00%"
-   - 點擊 **Tier 2 — High Risk** → 確認切換到 "12.00%"
-   - 最終選定 **Tier 0**
+#### Step 1 — Risk Level
 
-| Tier 按鈕 | 費率 | 描述 | Pass? |
-|-----------|------|------|-------|
-| Tier 0 | 5.00% | Low Risk | ☐ |
-| Tier 1 | 8.00% | Medium Risk | ☐ |
-| Tier 2 | 12.00% | High Risk | ☐ |
+4. 看到 3 張 **RiskTierSelector** 卡片（grid 排列）：
 
-5. **Coverage Amount (SUI)**：輸入 `1`（代表 1 SUI 的保額）
+| 卡片 | 費率 | Stats 顯示 | Pass? |
+|------|------|-----------|-------|
+| **Tier 0 — Low Risk** | 大字 `5%` | Coverage range, deductible %, max claims | ☐ |
+| **Tier 1 — Medium Risk** | 大字 `8%` | Coverage range, deductible %, max claims | ☐ |
+| **Tier 2 — High Risk** | 大字 `12%` | Coverage range, deductible %, max claims | ☐ |
 
-6. **Risk Pool Object ID**：貼入 **Tier 0 Pool ID**
-   - 如果 tier 不匹配，交易會失敗（這在負面測試覆蓋）
+5. 點擊各 tier 卡片，確認：
+   - 選中卡片邊框變橘色 + 淺橘背景
+   - **Pool Liquidity** 狀態列自動更新（如 "X.XX SUI available"）
+   - 如果該 tier 無 pool 或無流動性 → 顯示黃色 ⚠ 警告 "No liquidity for this tier" + "Provide liquidity" CTA 連結
+   - 無流動性時 **Continue** 按鈕 disabled
 
-7. **Character Object ID**：貼入你的 EVE Character Object ID
-   - 如果有 EVE SDK 整合，旁邊會出現紫色 **CharacterBadge** 顯示角色名稱
+6. 選定 **Tier 0**（有流動性）→ 點擊 **Continue >**
 
-8. **Self-Destruct Rider**（RiderToggle）：
-   - 先保持 **OFF** 狀態
-   - 觀察下方 **Estimated Premium**：
-     - Tier 0, Coverage 1 SUI, 無 Rider → `0.0500 SUI`（5%）
+---
 
-9. 切換 Rider 為 **ON**：
-   - Toggle 滑塊變橘色
-   - Premium 更新為 `0.0650 SUI`（5% × 1.3 = 6.5%）
-   - 旁邊標註 "(500% + 30% SD rider)" 之類的說明
+#### Step 2 — Coverage & Options
 
-10. 選定你要的 Rider 狀態，點擊 **Purchase Policy**
+7. Stepper 更新：步驟 1 顯示綠色 ✓ + tier label，步驟 2 橘色高亮
 
-11. **錢包簽名** → Approve
+8. **Coverage Amount** 輸入框：
+   - 下方顯示 **Min** / **Max** 限制（來自鏈上 PoolConfig + pool 可用流動性的 80%）
+   - 輸入 `1`（1 SUI）
+   - 進度條顯示 coverage 在 min~max 之間的比例
+
+| 驗證 | 預期 | Pass? |
+|------|------|-------|
+| Min/Max 顯示 | 非零，如 "Min: 1.0 SUI / Max: 8.0 SUI" | ☐ |
+| 輸入 0 或低於 min | Continue 按鈕 disabled | ☐ |
+| 輸入超過 max | Continue 按鈕 disabled | ☐ |
+
+9. **Character Object ID**：貼入 EVE Character Object ID
+
+10. **Self-Destruct Rider**（RiderToggle）：
+    - 看到說明：`Reduced payout (X% base). Y-day waiting period.`
+    - 卡片內顯示 3 個 stats：**Additional premium**、**Waiting period**、**Est. payout**
+    - 先保持 **OFF**（toggle 灰色）
+    - 切換為 **ON** → toggle 變橘色，邊框變橘色
+
+| RiderToggle 欄位 | OFF | ON | Pass? |
+|-----------------|-----|-----|-------|
+| Additional premium | 不顯示金額 | `+X.XXXX SUI (Y%)` 黃色 | ☐ |
+| Waiting period | 顯示天數 | 同上 | ☐ |
+| Est. payout | 不顯示 | `~X.XXXX SUI` | ☐ |
+
+11. 點擊 **Continue >**（需 coverage valid + character ID 非空）
+
+---
+
+#### Step 3 — Review & Purchase
+
+12. Stepper：步驟 1, 2 都顯示綠色 ✓ + 摘要 label
+
+13. **Summary 卡片** 確認：
+
+| 欄位 | 預期 | Pass? |
+|------|------|-------|
+| Risk Tier | "Tier 0 — Low Risk" 綠色 | ☐ |
+| Coverage | "1.00 SUI" | ☐ |
+| Duration | "30 days" | ☐ |
+| Character | 截斷顯示的 Object ID | ☐ |
+| SD Rider | "Included"（黃色）或 "Not included"（灰色） | ☐ |
+
+14. **Premium Breakdown**（橘色邊框卡片）：
+
+| 行 | 預期 | Pass? |
+|----|------|-------|
+| Base (5% of 1.00) | `0.0500 SUI` | ☐ |
+| SD Rider | 有 rider: `0.XXXX SUI (Y%)`；無: `--` | ☐ |
+| Protocol Fee (Z% to treasury) | `-0.XXXX SUI` | ☐ |
+| **You Pay** | 橘色粗體，base + SD 合計 | ☐ |
+
+> Premium 全由鏈上 PoolConfig 參數計算（bigint），不再 hardcode。
+
+15. **Estimated Claim Payouts** 卡片：
+
+| 行 | 顏色 | 預期 | Pass? |
+|----|------|------|-------|
+| 1st claim | 綠色 | `~X.XXXX SUI` (- deductible %) | ☐ |
+| 2nd claim | 黃色 | `~X.XXXX SUI` (+ decay %) | ☐ |
+| 3rd claim | 紅色 | `~X.XXXX SUI` (+ decay %) | ☐ |
+| SD 1st claim（有 rider 時） | 黃色 | `~X.XXXX SUI` (payout rate + decay multiplier) | ☐ |
+| 底部小字 | 灰色 | "Max N claims / policy. Xh cooldown between claims." | ☐ |
+
+16. 點擊 **Confirm & Purchase** → 錢包簽名
 
 | 結果 | 預期 | Pass? |
 |------|------|-------|
-| 成功 Toast | 綠色背景，顯示 "Policy purchased! Tx: {digest}" | ☐ |
-| 上方 Policy 列表 | 出現一張新的 **PolicyCard** | ☐ |
+| 按鈕狀態 | 簽名中顯示 "Confirming..." 且 disabled | ☐ |
+| 成功 Toast | 綠色背景，"Policy purchased! Tx: {digest}" | ☐ |
+| Wizard 重置 | 回到 Step 1 | ☐ |
+| 底部 Policy 列表 | 出現新的 **PolicyCard** | ☐ |
 
-12. 觀察新的 **PolicyCard**：
+17. 觀察新的 **PolicyCard**：
 
 | 欄位 | 預期 | Pass? |
 |------|------|-------|
@@ -261,6 +358,7 @@
 | Object ID | 底部灰色小字 `0x...` | ☐ |
 
 > 記下 **Policy Object ID**，後續操作需要。
+> Pool ID 全程不需手動輸入 — 由 PoolSelector auto-discover 自動帶入。
 
 ---
 
@@ -306,7 +404,7 @@
 
 2. 找到 **"Renew Policy"** 區塊
 
-3. **Risk Pool Object ID**：貼入對應 tier 的 Pool ID
+3. **Risk Pool Object ID**：從 PoolSelector dropdown 選取對應 tier 的 pool（或手動貼入 Pool ID）
 
 4. **Payment Amount (SUI)**：
    - 系統會顯示 "Estimated renewal premium: X SUI"
@@ -351,7 +449,7 @@
    - 貼入 Killmail ID
 
 4. **Step 3 — Risk Pool Object ID**：
-   - 貼入對應 tier 的 Pool ID
+   - 從 PoolSelector dropdown 選取對應 tier 的 pool（或手動貼入 Pool ID）
 
 5. **Step 4 — Claim Type**：
    - 點擊 **"Normal Claim"** 選項
@@ -606,7 +704,7 @@
 
 1. 點擊 Navbar **LP Pool** → 右上角 **Withdraw**
 
-2. **Step 1 — Pool ID**：貼入 Pool ID → 點擊 **Load**
+2. **Step 1 — Pool ID**：從 PoolSelector dropdown 選取 pool（或手動貼入 Pool ID）→ 點擊 **Load**
    - "Loading pool..." → 載入完成
 
 3. **Step 2 — Select Position**：
@@ -751,23 +849,24 @@
 
 | # | 操作 | 在哪裡 | 預期結果 | Pass? |
 |---|------|--------|---------|-------|
-| 16.1 | Coverage 填 `0` | `/insure` | 按鈕 disabled 或合約 abort | ☐ |
-| 16.2 | Coverage 填超大數（如 `99999`） | `/insure` | 合約 abort（pool 流動性不足），紅色錯誤 | ☐ |
-| 16.3 | Object ID 填亂碼（如 `abc123`） | 任何 ID 欄位 | 查詢失敗，顯示錯誤 | ☐ |
-| 16.4 | Object ID 留空 | 任何必填欄位 | 按鈕 disabled | ☐ |
-| 16.5 | Pool ID 和 Tier 不匹配 | `/insure` | 合約 abort（tier mismatch） | ☐ |
-| 16.6 | Bid 金額 < 目前最高出價 | `/salvage/:id` | BidForm 不接受或合約 abort | ☐ |
-| 16.7 | 提款 shares 超過持有量 | `/pool/withdraw` | 紅色 "Cannot exceed X shares" | ☐ |
+| 16.1 | Coverage 填 `0` 或低於 Min | `/insure` Step 2 | Continue 按鈕 disabled | ☐ |
+| 16.2 | Coverage 填超過 Max（pool limit） | `/insure` Step 2 | Continue 按鈕 disabled | ☐ |
+| 16.3 | Character ID 留空 | `/insure` Step 2 | Continue 按鈕 disabled | ☐ |
+| 16.4 | Object ID 填亂碼（如 `abc123`） | 任何 ID 欄位 | 查詢失敗，顯示錯誤 | ☐ |
+| 16.5 | Object ID 留空 | 任何必填欄位 | 按鈕 disabled | ☐ |
+| 16.6 | 選擇無流動性的 tier | `/insure` Step 1 | ⚠ 警告 + Continue disabled + "Provide liquidity" CTA | ☐ |
+| 16.7 | Bid 金額 < 目前最高出價 | `/salvage/:id` | BidForm 不接受或合約 abort | ☐ |
+| 16.8 | 提款 shares 超過持有量 | `/pool/withdraw` | 紅色 "Cannot exceed X shares" | ☐ |
 
 ### 狀態衝突
 
 | # | 操作 | 預期結果 | Pass? |
 |---|------|---------|-------|
-| 16.8 | 對已 Cancelled 保單點 Renew | 看不到 Renew 區塊（"This policy is cancelled...") | ☐ |
-| 16.9 | 對已 Cancelled 保單提交理賠 | Claims dropdown 中該保單標記 inactive，disable | ☐ |
-| 16.10 | 餘額不足時購保 | 錢包報錯 insufficient balance | ☐ |
-| 16.11 | 連續快速點擊 Submit 兩次 | 第一次成功，第二次 object version conflict | ☐ |
-| 16.12 | Pool 無流動性時購保 | 合約 abort，前端紅色錯誤 | ☐ |
+| 16.9 | 對已 Cancelled 保單點 Renew | 看不到 Renew 區塊（"This policy is cancelled...") | ☐ |
+| 16.10 | 對已 Cancelled 保單提交理賠 | Claims dropdown 中該保單標記 inactive，disable | ☐ |
+| 16.11 | 餘額不足時購保 | 錢包報錯 insufficient balance | ☐ |
+| 16.12 | 連續快速點擊 Submit 兩次 | 第一次成功，第二次 object version conflict | ☐ |
+| 16.13 | Pool 無流動性時購保 | Step 1 已攔截（16.6），無法到 Step 3 | ☐ |
 
 ### 關鍵驗證
 
@@ -798,18 +897,22 @@
 
 ### 資金流驗證
 
+> Premium 金額取決於鏈上 PoolConfig 參數。以下為 Tier 0 預設值估算：
+
 ```
 Pool 初始: 3 SUI (A 存入)
-+ Premium: ~0.065 SUI (保費)
-- Claim:   ~1 SUI (理賠支出)
++ Premium: ~0.05 SUI (base 5%) + ~0.70 SUI (SD rider，若有)
+- Claim:   ~coverage × (1 - deductible%) SUI (理賠支出)
 + Auction: 0.3 SUI (拍賣收入)
 ─────────
-Pool 最終: ~2.365 SUI
+Pool 最終: 依實際參數計算（參考 Step 3 Review 頁面的 Premium Breakdown）
 ```
+
+> 精確金額請對照 InsurePage Step 3 的 **Premium Breakdown** 和 **Estimated Claim Payouts**。
 
 | 檢查 | 預期 | Pass? |
 |------|------|-------|
-| A 的 LP 提款金額大致合理 | ≈ 2.365 SUI（扣除 exit fee） | ☐ |
+| A 的 LP 提款金額大致合理 | ≈ 初始存款 + premium - claim + auction（扣除 exit fee） | ☐ |
 | 過程中無任何 error | 全部操作成功 | ☐ |
 | 各頁面數據一致 | Policy/Pool/Auction 資料互相吻合 | ☐ |
 
@@ -855,7 +958,7 @@ Pool 最終: ~2.365 SUI
 | T-1: 連接/斷開錢包 | ☐ |
 | T-2: Dashboard 載入並顯示正確資料 | ☐ |
 | T-3: LP Deposit 成功 | ☐ |
-| T-4: Purchase Policy（3 種 tier + rider toggle） | ☐ |
+| T-4: Purchase Policy（3-step wizard + tier + rider + premium breakdown + claim estimate） | ☐ |
 | T-5: Policy Detail 欄位正確 | ☐ |
 | T-6: Renew Policy + NCB 遞增 | ☐ |
 | T-7: Normal Claim 成功 | ☐ |
@@ -884,15 +987,15 @@ Pool 最終: ~2.365 SUI
 
 | 項目 | Object ID |
 |------|-----------|
-| ProtocolConfig | `0x0e9ca9dbc87e828f907f0c8011973a9ba5ee8d3c1e0bea08b42f050a622d4523` |
-| PolicyRegistry | `0x11903d4c33205930b2fd9f79cbf2899d301940a4dc79b01e76981ab3806fbef8` |
-| ClaimRegistry | `0xe42f02223e9e635a2b03c9e3337fdcba0fb1a9bb7fba469df17bb70c142d8036` |
-| AuctionRegistry | `0x682807b31effdf6160e296b00012331b3a58b8560b102f733dfc6919944e29f9` |
-| ValuationRegistry | `0x0a617a6b38cbe66b8f0e00d9b10daf3f6383bf62c9e13ad3de6d89716f99f77a` |
+| ProtocolConfig | `0xa3e250db37b516cfc91183fe4ff36da4385a42562d7c14f70883146a1ff733f2` |
+| PolicyRegistry | `0xf6c1cb5970f2d7fa87ee3685d9d1a64b6d1a456afb4207dd3988553f0e8002b0` |
+| ClaimRegistry | `0x0fc12713f4f6ec4410b6b3d41e74c9df3f25a36929bdbeeb50b58292a80db676` |
+| AuctionRegistry | `0x01b122a7395c59174f8ccbe95875374cd241d352e732cc050ff803621955a31e` |
+| ValuationRegistry | `0xb51a5543640d60db072b5a5c8032a4da0770b952132a0c6943043c190b0b7ea6` |
 | Pool T0 (Low Risk) | |
 | Pool T1 (Medium Risk) | |
 | Pool T2 (High Risk) | |
-| AdminCap | |
+| AdminCap | `0x736974c5c58064d3d16a4f19cd27d21a702cb737c7dddfaaca39f9e000aab1f1`（auto-filled in DemoPanel） |
 | Character (EVE) | |
 | Killmail #1 | |
 | Killmail #2 | |

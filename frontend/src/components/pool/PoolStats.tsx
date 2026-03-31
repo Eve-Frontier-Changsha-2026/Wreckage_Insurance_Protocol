@@ -17,26 +17,34 @@ export default function PoolStats({ pool }: PoolStatsProps) {
   const fields = parsePoolFields(pool);
   if (!fields) return null;
 
-  const totalDeposits = Number(fields.total_deposits ?? fields.totalDeposits ?? 0);
+  // total_liquidity is Balance<SUI> — JSON-RPC serializes as string or nested object
+  const rawLiquidity = fields.total_liquidity;
+  const totalLiquidity = Number(
+    typeof rawLiquidity === 'object' && rawLiquidity !== null
+      ? (rawLiquidity as Record<string, unknown>).value ?? (rawLiquidity as Record<string, unknown>).fields?.value ?? 0
+      : rawLiquidity ?? 0,
+  );
   const totalShares = Number(fields.total_shares ?? fields.totalShares ?? 0);
   const reservedAmount = Number(fields.reserved_amount ?? fields.reservedAmount ?? 0);
-  const tier = Number(fields.tier ?? 0) as 0 | 1 | 2;
+  const configFields = fields.config as Record<string, unknown> | undefined;
+  const configInner = configFields?.fields as Record<string, unknown> | undefined;
+  const tier = Number(configInner?.risk_tier ?? configFields?.risk_tier ?? fields.tier ?? 0) as 0 | 1 | 2;
   const isActive = fields.is_active ?? fields.isActive ?? true;
   const TIER_NAMES: Record<0 | 1 | 2, string> = { 0: 'Low Risk', 1: 'Medium Risk', 2: 'High Risk' };
 
   const utilizationPct =
-    totalDeposits > 0 ? ((reservedAmount / totalDeposits) * 100).toFixed(1) : '0.0';
+    totalLiquidity > 0 ? ((reservedAmount / totalLiquidity) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
         <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">TVL</p>
-        <p className="text-white font-bold text-lg">{mistToSui(totalDeposits)} SUI</p>
+        <p className="text-white font-bold text-lg">{mistToSui(totalLiquidity)} SUI</p>
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
         <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Total Shares</p>
-        <p className="text-white font-bold text-lg">{totalShares.toLocaleString()}</p>
+        <p className="text-white font-bold text-lg">{mistToSui(totalShares)}</p>
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">

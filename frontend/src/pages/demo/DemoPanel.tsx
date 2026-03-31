@@ -18,7 +18,8 @@ import {
   buildDestroyUnsold,
 } from '../../lib/ptb/auction';
 import { buildSetItemPrice } from '../../lib/ptb/ssu';
-import { SHARED_OBJECTS } from '../../lib/contracts';
+import { buildAdminCreatePool, TIER_PRESETS } from '../../lib/ptb/admin';
+import { ADMIN_CAP, SHARED_OBJECTS } from '../../lib/contracts';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -327,8 +328,13 @@ export default function DemoPanel() {
   const [destroyAuctionId, setDestroyAuctionId] = useState('');
   const [destroyLoading, setDestroyLoading] = useState(false);
 
+  // ── Form state — Create Pool ──────────────────────────────────────────
+  const [createPoolTier, setCreatePoolTier] = useState('0');
+  const [createPoolAdminCap, setCreatePoolAdminCap] = useState(ADMIN_CAP);
+  const [createPoolLoading, setCreatePoolLoading] = useState(false);
+
   // ── Form state — Item Valuation ─────────────────────────────────────────
-  const [valAdminCapId, setValAdminCapId] = useState('');
+  const [valAdminCapId, setValAdminCapId] = useState(ADMIN_CAP);
   const [valItemTypeId, setValItemTypeId] = useState('');
   const [valPrice, setValPrice] = useState('');
   const [valLoading, setValLoading] = useState(false);
@@ -343,6 +349,7 @@ export default function DemoPanel() {
         buildDeposit({
           poolId: depositPoolId,
           amountMist: suiToMist(depositAmount),
+          senderAddress: account!.address,
         })
       );
     } finally {
@@ -357,10 +364,11 @@ export default function DemoPanel() {
       await execute('Purchase Policy', () =>
         buildPurchasePolicy({
           poolId: ppPoolId,
-          characterId: ppCharId,
+          insuredAddress: ppCharId,
           coverageAmount: suiToMist(ppCoverage),
           includeSelfDestruct: ppSdRider,
           paymentAmountMist: suiToMist(ppPayment),
+          senderAddress: account!.address,
         })
       );
     } finally {
@@ -427,6 +435,21 @@ export default function DemoPanel() {
       );
     } finally {
       setSettleLoading(false);
+    }
+  }
+
+  async function handleCreatePool() {
+    if (!createPoolAdminCap) return;
+    setCreatePoolLoading(true);
+    try {
+      await execute('Create Pool (Tier ' + createPoolTier + ')', () =>
+        buildAdminCreatePool({
+          adminCapId: createPoolAdminCap,
+          riskTier: Number(createPoolTier),
+        }),
+      );
+    } finally {
+      setCreatePoolLoading(false);
     }
   }
 
@@ -736,6 +759,47 @@ export default function DemoPanel() {
             These calls require an AdminCap object owned by the connected wallet.
             Transactions will fail on-chain if no AdminCap is present.
           </p>
+
+          {/* Create Pool */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-300">Create Risk Pool</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>AdminCap ID</Label>
+                <Input
+                  value={createPoolAdminCap}
+                  onChange={setCreatePoolAdminCap}
+                  placeholder="0x…"
+                />
+              </div>
+              <div>
+                <Label>Tier</Label>
+                <select
+                  value={createPoolTier}
+                  onChange={(e) => setCreatePoolTier(e.target.value)}
+                  className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-orange-500"
+                >
+                  {Object.entries(TIER_PRESETS).map(([tier, preset]) => (
+                    <option key={tier} value={tier}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Creates a RiskPool + registers tier config in ProtocolConfig (one tx).
+            </p>
+            <ExecButton
+              onClick={handleCreatePool}
+              loading={createPoolLoading}
+              disabled={!createPoolAdminCap}
+            >
+              Create Pool
+            </ExecButton>
+          </div>
+
+          <div className="border-t border-gray-800" />
 
           {/* Expire Policy */}
           <div className="space-y-2">

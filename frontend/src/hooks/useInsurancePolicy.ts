@@ -5,6 +5,7 @@ import {
 } from '@mysten/dapp-kit-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PACKAGE_ID } from '../lib/contracts';
+import { rpcGetObject, rpcGetOwnedObjects } from '../lib/rpc';
 import {
   buildPurchasePolicy,
   buildRenewPolicy,
@@ -17,34 +18,23 @@ import { useState, useCallback } from 'react';
 const POLICY_TYPE = `${PACKAGE_ID}::policy::InsurancePolicy`;
 
 export function useOwnedPolicies() {
-  const client = useCurrentClient();
   const account = useCurrentAccount();
 
   return useQuery({
     queryKey: ['ownedPolicies', account?.address],
     queryFn: async () => {
-      const result = await client.listOwnedObjects({
-        owner: account!.address,
-        type: POLICY_TYPE,
-        include: { content: true },
-      });
-      return result.objects;
+      return rpcGetOwnedObjects(account!.address, POLICY_TYPE);
     },
     enabled: !!account,
   });
 }
 
 export function usePolicyDetail(policyId: string | undefined) {
-  const client = useCurrentClient();
-
   return useQuery({
     queryKey: ['policyDetail', policyId],
     queryFn: async () => {
-      const result = await client.getObject({
-        objectId: policyId!,
-        include: { content: true },
-      });
-      return result.object;
+      const result = await rpcGetObject(policyId!);
+      return result.data;
     },
     enabled: !!policyId,
   });
@@ -61,7 +51,7 @@ export function usePurchasePolicy() {
   const execute = useCallback(
     async (args: {
       poolId: string;
-      characterId: string;
+      insuredAddress: string;
       coverageAmount: bigint;
       includeSelfDestruct: boolean;
       paymentAmountMist: bigint;
@@ -70,7 +60,7 @@ export function usePurchasePolicy() {
       setIsPending(true);
       setError(null);
       try {
-        const tx = buildPurchasePolicy(args);
+        const tx = buildPurchasePolicy({ ...args, senderAddress: account.address });
         const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
         if (result.FailedTransaction) {
           throw new Error(

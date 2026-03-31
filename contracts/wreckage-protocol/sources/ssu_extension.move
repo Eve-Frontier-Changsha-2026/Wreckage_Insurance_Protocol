@@ -10,7 +10,7 @@ use sui::sui::SUI;
 use sui::clock::Clock;
 use sui::event;
 use world::storage_unit::StorageUnit;
-use world::character::Character;
+
 use world::killmail::Killmail;
 use wreckage_protocol::config::ProtocolConfig;
 use wreckage_protocol::risk_pool::RiskPool;
@@ -60,7 +60,7 @@ public fun purchase_via_ssu(
     config: &ProtocolConfig,
     pool: &mut RiskPool,
     policy_registry: &mut PolicyRegistry,
-    character: &Character,
+    insured: address,
     coverage_amount: u64,
     include_self_destruct: bool,
     payment: Coin<SUI>,
@@ -69,7 +69,7 @@ public fun purchase_via_ssu(
 ): InsurancePolicy {
     assert_ssu_online(storage_unit);
     let policy = underwriting::purchase_policy(
-        config, pool, policy_registry, character,
+        config, pool, policy_registry, insured,
         coverage_amount, include_self_destruct, payment, clock, ctx,
     );
     emit_event(object::id(storage_unit), OP_PURCHASE, object::id(&policy), ctx);

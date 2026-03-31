@@ -1,17 +1,20 @@
 export const PACKAGE_ID =
-  '0xbb2f732232d0bf4b3c7b91cce214635e329952ff9acea810963c56cc8d28ac41';
+  '0x986d8cf6ba2e0fe8c1e2b6aea014c68bf6a1c67bcccd6b5470fce8d6e5456ed2';
+
+export const ADMIN_CAP =
+  '0x60d0ac792ce7a2ba2830b1523ef15b9cc8aed17d4ad95d15b53d7c8d1a070a0b';
 
 export const SHARED_OBJECTS = {
   protocolConfig:
-    '0x0e9ca9dbc87e828f907f0c8011973a9ba5ee8d3c1e0bea08b42f050a622d4523',
+    '0xf5a5ca0a0d186fc82dc5a184c4b94befa3bbc0e41eb25e02a5eacf0829fc3e3a',
   policyRegistry:
-    '0x11903d4c33205930b2fd9f79cbf2899d301940a4dc79b01e76981ab3806fbef8',
+    '0x92a86986f650878762591c3a9f75f133be1fd1f35145d46202db623bb40d6edc',
   claimRegistry:
-    '0xe42f02223e9e635a2b03c9e3337fdcba0fb1a9bb7fba469df17bb70c142d8036',
+    '0xb75340106ae01287f3dc41fec308ffc44a162eabf7c598c8a21db5f5cb3995df',
   auctionRegistry:
-    '0x682807b31effdf6160e296b00012331b3a58b8560b102f733dfc6919944e29f9',
+    '0x8d3f6c002f7693250e91789738171b439aa38de184656db4dc36d589eb40ad4f',
   valuationRegistry:
-    '0x0a617a6b38cbe66b8f0e00d9b10daf3f6383bf62c9e13ad3de6d89716f99f77a',
+    '0x0b9cbbffb3c2a743d7afd5b6f0c3f0132108802de21b05b0dbd5656952fc78bb',
 } as const;
 
 export const MODULE = {

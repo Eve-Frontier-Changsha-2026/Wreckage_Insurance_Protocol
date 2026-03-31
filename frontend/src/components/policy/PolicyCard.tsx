@@ -11,6 +11,7 @@ const STATUS_BADGE: Record<string, string> = {
   active: 'bg-emerald-500/20 text-emerald-400',
   expired: 'bg-gray-500/20 text-gray-400',
   claimed: 'bg-blue-500/20 text-blue-400',
+  cancelled: 'bg-red-500/20 text-red-400',
 };
 
 function mistToSui(mist: number): string {
@@ -53,11 +54,14 @@ export default function PolicyCard({ policy, onClick }: PolicyCardProps) {
   const coverage = Number(fields.coverage_amount ?? fields.coverageAmount ?? 0);
   const ncbStreak = Number(fields.ncb_streak ?? fields.ncbStreak ?? 0);
   const hasSdRider = Boolean(fields.has_self_destruct_rider ?? fields.hasSelfDestructRider ?? false);
-  const rawStatus = String(fields.status ?? 'active');
-  const status = rawStatus.toLowerCase().includes('active')
+  const rawStatus = fields.status;
+  const statusNum = typeof rawStatus === 'number' ? rawStatus : Number(rawStatus);
+  const status = statusNum === 0 || String(rawStatus).toLowerCase().includes('active')
     ? 'active'
-    : rawStatus.toLowerCase().includes('claim')
+    : statusNum === 1 || String(rawStatus).toLowerCase().includes('claim')
     ? 'claimed'
+    : statusNum === 3 || String(rawStatus).toLowerCase().includes('cancel')
+    ? 'cancelled'
     : 'expired';
 
   return (

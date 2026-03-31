@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
 import { ConnectButton } from '@mysten/dapp-kit-react';
 import { useOwnedPolicies } from '../../hooks/useInsurancePolicy';
 import { useSubmitClaim, useSubmitSelfDestructClaim } from '../../hooks/useClaims';
+import {
+  useCharacterKillmails,
+  useOnChainKillmails,
+  resolveUtopiaToOnChain,
+  type UtopiaKillmail,
+} from '../../hooks/useKillmail';
+import { useGameCharacter } from '../../hooks/useGameCharacter';
+import { useDiscoverPools } from '../../hooks/useDiscoverPools';
 import { TIER_NAMES } from '../../lib/types';
 
 type ClaimType = 'normal' | 'selfDestruct';
@@ -27,13 +35,66 @@ export default function ClaimPage() {
   const { data: policies, isLoading: policiesLoading } = useOwnedPolicies();
   const submitClaim = useSubmitClaim();
   const submitSelfDestruct = useSubmitSelfDestructClaim();
+  const { data: pools } = useDiscoverPools();
+
+  const { data: gameCharacter, isLoading: charLoading } = useGameCharacter();
+  const gameCharacterId = gameCharacter?.id;
 
   const [selectedPolicyId, setSelectedPolicyId] = useState<string>(urlPolicyId);
-  const [killmailId, setKillmailId] = useState('');
+  const [selectedUtopiaIdx, setSelectedUtopiaIdx] = useState<number>(-1);
+  const [manualKillmailId, setManualKillmailId] = useState('');
   const [poolId, setPoolId] = useState('');
   const [claimType, setClaimType] = useState<ClaimType>('normal');
-
   const [successDigest, setSuccessDigest] = useState<string | null>(null);
+
+  // Extract selected policy fields (safe before early return)
+  const selectedPolicyObj = policies?.find((obj) => {
+    const o = obj as Record<string, unknown>;
+    return (o.objectId as string) === selectedPolicyId;
+  });
+  const selectedFields = selectedPolicyObj ? parsePolicyFields(selectedPolicyObj) : null;
+  const hasSelfDestructRider = selectedFields?.has_self_destruct_rider === true
+    || selectedFields?.hasSelfDestructRider === true;
+  const policyStatus = (selectedFields?.status as string | undefined) ?? '';
+  const isActive = policyStatus === 'active' || policyStatus === '0'
+    || Number(policyStatus) === 0;
+
+  // Fetch killmails for this character from Utopia indexer (auto-resolved game character ID)
+  const { data: killmails, isLoading: killmailsLoading } = useCharacterKillmails(
+    gameCharacterId,
+  );
+
+  // Fetch on-chain killmails from our protocol to resolve Sui object IDs
+  const { data: onChainKillmails, isLoading: onChainLoading } = useOnChainKillmails();
+
+  // Resolve selected utopia killmail → on-chain Sui object ID
+  const selectedUtopia: UtopiaKillmail | undefined =
+    killmails && selectedUtopiaIdx >= 0 ? killmails[selectedUtopiaIdx] : undefined;
+  const resolvedOnChain = selectedUtopia
+    ? resolveUtopiaToOnChain(selectedUtopia.killedAt, onChainKillmails)
+    : undefined;
+  // The killmail ID to use in the PTB: resolved Sui object ID or manual input
+  const killmailId = resolvedOnChain?.suiObjectId ?? manualKillmailId;
+
+  // Auto-fill pool ID from policy tier
+  const policyTier = Number(selectedFields?.risk_tier ?? selectedFields?.tier ?? 0);
+  const resolvedPoolId = useMemo(
+    () => pools?.find((p) => p.riskTier === policyTier)?.poolId ?? '',
+    [pools, policyTier],
+  );
+
+  useEffect(() => {
+    if (resolvedPoolId && !poolId) setPoolId(resolvedPoolId);
+  }, [resolvedPoolId, poolId]);
+
+  // Reset pool auto-fill when policy changes
+  useEffect(() => {
+    if (resolvedPoolId) setPoolId(resolvedPoolId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPolicyId, resolvedPoolId]);
+
+  const isPending = submitClaim.isPending || submitSelfDestruct.isPending;
+  const error = submitClaim.error ?? submitSelfDestruct.error;
 
   if (!account) {
     return (
@@ -43,20 +104,6 @@ export default function ClaimPage() {
       </div>
     );
   }
-
-  // Find selected policy details
-  const selectedPolicyObj = policies?.find((obj) => {
-    const o = obj as Record<string, unknown>;
-    return (o.objectId as string) === selectedPolicyId;
-  });
-  const selectedFields = selectedPolicyObj ? parsePolicyFields(selectedPolicyObj) : null;
-  const hasSelfDestructRider = selectedFields?.has_self_destruct_rider === true
-    || selectedFields?.hasSelfDestructRider === true;
-  const policyStatus = (selectedFields?.status as string | undefined) ?? '';
-  const isActive = policyStatus === 'active' || policyStatus === '0';
-
-  const isPending = submitClaim.isPending || submitSelfDestruct.isPending;
-  const error = submitClaim.error ?? submitSelfDestruct.error;
 
   const canSubmit =
     selectedPolicyId.trim() !== '' &&
@@ -112,7 +159,8 @@ export default function ClaimPage() {
             <button
               onClick={() => {
                 setSuccessDigest(null);
-                setKillmailId('');
+                setSelectedUtopiaIdx(-1);
+                setManualKillmailId('');
                 setPoolId('');
               }}
               className="text-gray-400 hover:text-white text-sm transition-colors"
@@ -206,38 +254,106 @@ export default function ClaimPage() {
             )}
           </div>
 
-          {/* Step 2: Killmail Object ID */}
+          {/* Step 2: Killmail */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h2 className="text-orange-400 font-semibold text-sm uppercase tracking-wider mb-4">
-              Step 2 — Killmail Object ID
+              Step 2 — Killmail
             </h2>
-            <label className="block text-gray-400 text-xs mb-1">
-              Paste the on-chain Killmail object ID from EVE Frontier
-            </label>
-            <input
-              type="text"
-              value={killmailId}
-              onChange={(e) => setKillmailId(e.target.value)}
-              placeholder="0x..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-orange-500 placeholder-gray-600"
-            />
+
+            {charLoading ? (
+              <p className="text-gray-500 text-sm">Resolving game character...</p>
+            ) : !gameCharacterId ? (
+              <p className="text-gray-500 text-sm">
+                No EVE character found for this wallet. You can paste a Killmail object ID manually below.
+              </p>
+            ) : null}
+
+            {gameCharacterId && killmails && killmails.length > 0 ? (
+              <>
+                <label className="block text-gray-400 text-xs mb-1">
+                  Select a killmail from your loss history
+                </label>
+                <select
+                  value={selectedUtopiaIdx}
+                  onChange={(e) => {
+                    setSelectedUtopiaIdx(Number(e.target.value));
+                    setManualKillmailId('');
+                  }}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                >
+                  <option value={-1}>— Select killmail —</option>
+                  {killmails.map((km, idx) => {
+                    const date = new Date(km.killedAt).toLocaleDateString('en-US', {
+                      month: 'short', day: 'numeric', year: 'numeric',
+                      hour: '2-digit', minute: '2-digit',
+                    });
+                    return (
+                      <option key={km.id} value={idx}>
+                        {date} — killed by {km.killerName} ({km.lossType})
+                      </option>
+                    );
+                  })}
+                </select>
+                {selectedUtopia && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {onChainLoading && <span className="text-[10px] text-gray-500">resolving on-chain...</span>}
+                    {!onChainLoading && resolvedOnChain && (
+                      <>
+                        <p className="text-[11px] text-gray-600 font-mono break-all">{resolvedOnChain.suiObjectId}</p>
+                        <span className="text-[10px] text-green-400 whitespace-nowrap">✓ on-chain</span>
+                      </>
+                    )}
+                    {!onChainLoading && !resolvedOnChain && (
+                      <span className="text-[10px] text-yellow-400 whitespace-nowrap">
+                        ✗ not registered on-chain yet
+                      </span>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <label className="block text-gray-400 text-xs mb-1">
+                  {killmailsLoading
+                    ? 'Loading killmails from indexer...'
+                    : gameCharacterId && killmails?.length === 0
+                    ? 'No killmails found for this character. Paste the Sui object ID manually:'
+                    : 'Paste the Killmail Sui object ID'}
+                </label>
+                <input
+                  type="text"
+                  value={manualKillmailId}
+                  onChange={(e) => setManualKillmailId(e.target.value)}
+                  placeholder="0x..."
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-orange-500 placeholder-gray-600"
+                />
+              </>
+            )}
           </div>
 
           {/* Step 3: Pool Object ID */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h2 className="text-orange-400 font-semibold text-sm uppercase tracking-wider mb-4">
-              Step 3 — Risk Pool Object ID
+              Step 3 — Risk Pool
             </h2>
-            <label className="block text-gray-400 text-xs mb-1">
-              Enter the Risk Pool object ID that covers your policy tier
-            </label>
             <input
               type="text"
               value={poolId}
               onChange={(e) => setPoolId(e.target.value)}
               placeholder="0x..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-orange-500 placeholder-gray-600"
+              className={`w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-orange-500 ${
+                resolvedPoolId ? 'bg-gray-800/50 border-gray-700/50 text-gray-400' : 'bg-gray-800 border-gray-700 text-white placeholder-gray-600'
+              }`}
             />
+            {resolvedPoolId ? (
+              <p className="text-[11px] text-gray-600 mt-1">
+                Auto-filled from {TIER_NAMES[policyTier as 0 | 1 | 2] ?? `Tier ${policyTier}`} pool
+              </p>
+            ) : (
+              <p className="text-[11px] text-gray-600 mt-1">
+                Enter the Risk Pool object ID that covers your policy tier
+              </p>
+            )}
           </div>
 
           {/* Step 4: Claim Type */}

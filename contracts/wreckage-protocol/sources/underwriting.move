@@ -6,7 +6,6 @@ use sui::coin::{Self, Coin};
 use sui::sui::SUI;
 use sui::clock::Clock;
 use sui::event;
-use world::character::Character;
 use wreckage_protocol::policy::{Self, InsurancePolicy};
 use wreckage_protocol::rider;
 use wreckage_protocol::errors;
@@ -30,7 +29,7 @@ public fun purchase_policy(
     config: &ProtocolConfig,
     pool: &mut RiskPool,
     policy_registry: &mut PolicyRegistry,
-    character: &Character,
+    insured: address,
     coverage_amount: u64,
     include_self_destruct: bool,
     mut payment: Coin<SUI>,
@@ -91,9 +90,8 @@ public fun purchase_policy(
 
     // Create policy
     let now = clock.timestamp_ms() / 1000;
-    let character_id = character.key();
     let new_policy = policy::create(
-        character_id,
+        insured,
         coverage_amount,
         total_premium,
         tier,
@@ -104,8 +102,8 @@ public fun purchase_policy(
         ctx,
     );
 
-    // Register in PolicyRegistry (aborts if character already insured)
-    registry::register_policy(policy_registry, character_id, object::id(&new_policy));
+    // Register in PolicyRegistry (aborts if address already insured)
+    registry::register_policy(policy_registry, insured, object::id(&new_policy));
 
     // Refund change
     if (payment.value() > 0) {

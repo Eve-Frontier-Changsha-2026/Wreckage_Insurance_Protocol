@@ -52,6 +52,9 @@ public fun cancellation_not_allowed(): u64 { 63 }
 // SSU Extension Errors (65+)
 public fun ssu_not_online(): u64 { 65 }
 
+// General Errors (70+)
+public fun invalid_amount(): u64 { 73 }
+
 // Item Valuation Errors (70+)
 public fun item_not_priced(): u64 { 70 }
 public fun invalid_ltv(): u64 { 71 }

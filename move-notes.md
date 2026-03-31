@@ -180,3 +180,38 @@
 - **Shared objects**: ProtocolConfig, PolicyRegistry, ClaimRegistry, AuctionRegistry, RiskPool — all shared, no `store` ability.
 - **`create_and_share_*` pattern**: Structs without `store` must be shared in their defining module.
 - **Version field**: All shared objects have version for future upgradeability.
+
+## Future: Generic Phantom Pool Refactor (Approach C)
+
+**Status**: Planned, not yet implemented
+**Recorded**: 2026-03-26
+
+### Current Design
+`RiskPool` is a single non-generic type. All tiers share the same on-chain type, distinguished only by internal `config.risk_tier: u8`. Pool discovery relies on `PoolCreatedEvent` indexing (Approach B).
+
+### Proposed Design
+```move
+public struct TIER_LOW has drop {}
+public struct TIER_MED has drop {}
+public struct TIER_HIGH has drop {}
+
+public struct RiskPool<phantom T> has key { ... }
+```
+
+Each tier becomes a distinct on-chain type → queryable by type string without event indexing.
+
+### Benefits
+- Type-level query: `suix_queryObjects({ StructType: "...::RiskPool<...::TIER_LOW>" })`
+- Compile-time tier safety: cannot pass wrong pool to wrong function
+- Composability: other protocols can reference `RiskPool<TIER_LOW>` specifically
+
+### Cost
+- 30+ function signatures change (`&RiskPool` → `&RiskPool<T>`)
+- All tests must add type parameters
+- All frontend PTB builders need type arguments
+- Cannot dynamically add new tiers at runtime (each new tier = code change + redeploy)
+
+### When to Trigger
+- When needing permissionless pool creation
+- When cross-protocol composability requires type-level pool distinction
+- When event indexer reliability becomes a concern

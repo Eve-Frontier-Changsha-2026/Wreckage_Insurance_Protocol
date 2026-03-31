@@ -5,28 +5,31 @@ const CLOCK = '0x6';
 
 export function buildPurchasePolicy(args: {
   poolId: string;
-  characterId: string;
+  insuredAddress: string;
   coverageAmount: bigint;
   includeSelfDestruct: boolean;
   paymentAmountMist: bigint;
+  senderAddress: string;
 }) {
   const tx = new Transaction();
 
   const [payment] = tx.splitCoins(tx.gas, [args.paymentAmountMist]);
 
-  tx.moveCall({
+  const [policy] = tx.moveCall({
     target: `${PACKAGE_ID}::underwriting::purchase_policy`,
     arguments: [
       tx.object(SHARED_OBJECTS.protocolConfig),
       tx.object(args.poolId),
       tx.object(SHARED_OBJECTS.policyRegistry),
-      tx.object(args.characterId),
+      tx.pure.address(args.insuredAddress),
       tx.pure.u64(args.coverageAmount),
       tx.pure.bool(args.includeSelfDestruct),
       payment,
       tx.object(CLOCK),
     ],
   });
+
+  tx.transferObjects([policy], tx.pure.address(args.senderAddress));
 
   return tx;
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
 import { ConnectButton } from '@mysten/dapp-kit-react';
 import { useRiskPoolDetail, useDeposit } from '../../hooks/useRiskPool';
+import PoolSelector from '../../components/pool/PoolSelector';
 
 const MIST_PER_SUI = 1_000_000_000n;
 
@@ -13,13 +14,21 @@ function parsePoolFields(pool: unknown) {
   return fields ?? null;
 }
 
+function extractBalance(raw: unknown): number {
+  if (typeof raw === 'object' && raw !== null) {
+    const obj = raw as Record<string, unknown>;
+    return Number(obj.value ?? (obj.fields as Record<string, unknown>)?.value ?? 0);
+  }
+  return Number(raw ?? 0);
+}
+
 function computeSharePrice(pool: unknown): number {
   const fields = parsePoolFields(pool);
   if (!fields) return 0;
-  const totalDeposits = Number(fields.total_deposits ?? fields.totalDeposits ?? 0);
+  const totalLiquidity = extractBalance(fields.total_liquidity);
   const totalShares = Number(fields.total_shares ?? fields.totalShares ?? 0);
   if (totalShares === 0) return 1_000_000_000; // 1 SUI per share for first depositor
-  return totalDeposits / totalShares;
+  return totalLiquidity / totalShares;
 }
 
 export default function DepositPage() {
@@ -110,29 +119,18 @@ export default function DepositPage() {
         </p>
 
         <form onSubmit={handleDeposit} className="flex flex-col gap-6">
-          {/* Pool ID */}
+          {/* Pool Selection */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h2 className="text-orange-400 font-semibold text-sm uppercase tracking-wider mb-4">
-              Step 1 — Pool ID
+              Step 1 — Select Pool
             </h2>
-            <label className="block text-gray-400 text-xs mb-1">Risk Pool Object ID</label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={poolId}
-                onChange={(e) => setPoolId(e.target.value)}
-                placeholder="0x..."
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-orange-500 placeholder-gray-600"
-              />
-              <button
-                type="button"
-                onClick={() => setLoadedPoolId(poolId.trim() || undefined)}
-                disabled={!poolId.trim()}
-                className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm px-3 py-2 rounded-lg transition-colors"
-              >
-                Load
-              </button>
-            </div>
+            <PoolSelector
+              value={loadedPoolId}
+              onChange={(id) => {
+                setPoolId(id);
+                setLoadedPoolId(id);
+              }}
+            />
 
             {loadedPoolId && (
               <div className="mt-3">
@@ -142,16 +140,16 @@ export default function DepositPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs text-gray-400 mt-2">
                     {(() => {
                       const f = parsePoolFields(poolData);
-                      const totalDeposits = Number(f?.total_deposits ?? f?.totalDeposits ?? 0);
+                      const totalLiquidity = extractBalance(f?.total_liquidity);
                       const totalShares = Number(f?.total_shares ?? f?.totalShares ?? 0);
                       return (
                         <>
                           <span>TVL:</span>
                           <span className="text-white text-right">
-                            {(totalDeposits / 1_000_000_000).toFixed(4)} SUI
+                            {(totalLiquidity / 1_000_000_000).toFixed(4)} SUI
                           </span>
                           <span>Total Shares:</span>
-                          <span className="text-white text-right">{totalShares.toLocaleString()}</span>
+                          <span className="text-white text-right">{(totalShares / 1_000_000_000).toFixed(4)}</span>
                           <span>Share Price:</span>
                           <span className="text-orange-400 text-right">
                             {(sharePrice / 1_000_000_000).toFixed(6)} SUI/share

@@ -55,6 +55,12 @@ public struct LPWithdrawEvent has copy, drop {
     fee: u64,
 }
 
+public struct PoolCreatedEvent has copy, drop {
+    pool_id: ID,
+    risk_tier: u8,
+    creator: address,
+}
+
 // === Constructor (package-visible, share inside this module) ===
 public(package) fun create_and_share_pool(
     config: PoolConfig,
@@ -71,6 +77,11 @@ public(package) fun create_and_share_pool(
         is_active: true,
         version: 1,
     };
+    event::emit(PoolCreatedEvent {
+        pool_id: object::id(&pool),
+        risk_tier: config.risk_tier(),
+        creator: ctx.sender(),
+    });
     transfer::share_object(pool);
 }
 
@@ -109,7 +120,7 @@ public fun deposit(
 ): LPPosition {
     assert!(pool.is_active, errors::pool_not_active());
     let deposit_amount = deposit_coin.value();
-    assert!(deposit_amount > 0, 0);
+    assert!(deposit_amount > 0, errors::invalid_amount());
 
     // Calculate shares: deposit * total_shares / total_liquidity
     let total_liq = total_liquidity_value(pool);
@@ -146,59 +157,8 @@ public fun withdraw(
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<SUI> {
-    // M-6: Check pool_id instead of tier to prevent cross-pool withdraw
-    assert!(position.pool_id == object::id(pool), errors::wrong_pool());
-    assert!(shares_to_burn > 0 && shares_to_burn <= position.shares, 0);
-
-    // Check lock period
-    let now = clock.timestamp_ms() / 1000;
-    assert!(now >= position.deposited_at + LP_LOCK_PERIOD, errors::lp_lock_period_not_elapsed());
-
-    // Calculate withdrawal amount
-    let total_liq = total_liquidity_value(pool);
-    let gross_amount = (((shares_to_burn as u128) * (total_liq as u128) / (pool.total_shares as u128)) as u64);
-
-    // Check withdraw cap (25% of available)
-    let avail = available_liquidity(pool);
-    let max_withdraw = avail * LP_WITHDRAW_CAP_BPS / 10000;
-    assert!(gross_amount <= max_withdraw, errors::lp_withdraw_cap_exceeded());
-
-    // Calculate dynamic withdrawal fee
-    // fee_rate_bps = (utilization_bps - 6000) * 2, applied to gross_amount
-    let util = utilization_bps(pool);
-    let fee = if (util > UTILIZATION_FEE_THRESHOLD_BPS) {
-        let fee_rate_bps = (util - UTILIZATION_FEE_THRESHOLD_BPS) * 2;
-        (((gross_amount as u128) * (fee_rate_bps as u128) / 10000) as u64)
-    } else {
-        0
-    };
-    let net_amount = gross_amount - fee;
-
-    // Ensure we don't withdraw more than raw balance
-    let net_amount = if (net_amount > pool.total_liquidity.value()) {
-        pool.total_liquidity.value()
-    } else {
-        net_amount
-    };
-
-    position.shares = position.shares - shares_to_burn;
-    pool.total_shares = pool.total_shares - shares_to_burn;
-
-    // Invariant: remaining liquidity must cover reservations
-    assert!(pool.total_liquidity.value() - net_amount >= pool.reserved_amount,
-        errors::pool_insufficient_liquidity());
-
-    let withdraw_balance = pool.total_liquidity.split(net_amount);
-
-    event::emit(LPWithdrawEvent {
-        pool_tier: pool.config.risk_tier(),
-        withdrawer: ctx.sender(),
-        amount: net_amount,
-        shares_burned: shares_to_burn,
-        fee,
-    });
-
-    coin::from_balance(withdraw_balance, ctx)
+    assert!(pool.is_active, errors::pool_not_active());
+    internal_withdraw(pool, position, shares_to_burn, clock, ctx)
 }
 
 // === Pool Operations (called by claims/underwriting) ===
@@ -254,7 +214,7 @@ public fun lp_deposited_at(pos: &LPPosition): u64 { pos.deposited_at }
 public fun lp_initial_deposit(pos: &LPPosition): u64 { pos.initial_deposit }
 
 public fun destroy_empty_position(pos: LPPosition) {
-    assert!(pos.shares == 0, 0);
+    assert!(pos.shares == 0, errors::invalid_amount());
     let LPPosition { id, .. } = pos;
     id.delete();
 }
@@ -269,22 +229,34 @@ public fun emergency_withdraw(
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<SUI> {
-    assert!(position.pool_id == object::id(pool), errors::wrong_pool());
-    assert!(shares_to_burn > 0 && shares_to_burn <= position.shares, 0);
+    internal_withdraw(pool, position, shares_to_burn, clock, ctx)
+}
 
-    // Lock period still applies (prevents flash-loan style attacks)
+// === Internal Withdraw Helper ===
+fun internal_withdraw(
+    pool: &mut RiskPool,
+    position: &mut LPPosition,
+    shares_to_burn: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Coin<SUI> {
+    assert!(position.pool_id == object::id(pool), errors::wrong_pool());
+    assert!(shares_to_burn > 0 && shares_to_burn <= position.shares, errors::invalid_amount());
+
+    // Check lock period
     let now = clock.timestamp_ms() / 1000;
     assert!(now >= position.deposited_at + LP_LOCK_PERIOD, errors::lp_lock_period_not_elapsed());
 
+    // Calculate withdrawal amount
     let total_liq = total_liquidity_value(pool);
     let gross_amount = (((shares_to_burn as u128) * (total_liq as u128) / (pool.total_shares as u128)) as u64);
 
-    // Withdraw cap still applies
+    // Check withdraw cap (25% of available)
     let avail = available_liquidity(pool);
     let max_withdraw = avail * LP_WITHDRAW_CAP_BPS / 10000;
     assert!(gross_amount <= max_withdraw, errors::lp_withdraw_cap_exceeded());
 
-    // Dynamic withdrawal fee
+    // Dynamic withdrawal fee: fee_rate_bps = (utilization_bps - 6000) * 2
     let util = utilization_bps(pool);
     let fee = if (util > UTILIZATION_FEE_THRESHOLD_BPS) {
         let fee_rate_bps = (util - UTILIZATION_FEE_THRESHOLD_BPS) * 2;
@@ -294,6 +266,7 @@ public fun emergency_withdraw(
     };
     let net_amount = gross_amount - fee;
 
+    // Ensure we don't withdraw more than raw balance
     let net_amount = if (net_amount > pool.total_liquidity.value()) {
         pool.total_liquidity.value()
     } else {
@@ -303,6 +276,7 @@ public fun emergency_withdraw(
     position.shares = position.shares - shares_to_burn;
     pool.total_shares = pool.total_shares - shares_to_burn;
 
+    // Invariant: remaining liquidity must cover reservations
     assert!(pool.total_liquidity.value() - net_amount >= pool.reserved_amount,
         errors::pool_insufficient_liquidity());
 

@@ -30,6 +30,7 @@ const TRIBE_ID: u32 = 1;
 const COVERAGE: u64 = 10_000_000_000;     // 10 SUI
 const OVERPAYMENT: u64 = 20_000_000_000;  // 20 SUI
 const LP_DEPOSIT: u64 = 100_000_000_000;  // 100 SUI
+const INSURED: address = @0xBEEF;
 
 // SSU constants (from storage_unit_tests)
 const STORAGE_A_TYPE_ID: u64 = 5555;
@@ -219,19 +220,17 @@ fun test_purchase_via_ssu_online() {
     let cfg = ts.take_shared<ProtocolConfig>();
     let mut pool = ts.take_shared<RiskPool>();
     let mut policy_reg = ts.take_shared<PolicyRegistry>();
-    let character = test_scenario::take_shared_by_id<Character>(&ts, char_id);
     let payment = coin::mint_for_testing<SUI>(OVERPAYMENT, ts.ctx());
     let clk = clock::create_for_testing(ts.ctx());
 
     let policy = ssu_extension::purchase_via_ssu(
-        &ssu, &cfg, &mut pool, &mut policy_reg, &character,
+        &ssu, &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, payment, &clk, ts.ctx(),
     );
     assert!(policy.is_active());
 
     transfer::public_transfer(policy, PLAYER_A);
     clk.destroy_for_testing();
-    test_scenario::return_shared(character);
     test_scenario::return_shared(policy_reg);
     test_scenario::return_shared(pool);
     test_scenario::return_shared(cfg);
@@ -257,18 +256,16 @@ fun test_purchase_via_ssu_offline_fails() {
     let cfg = ts.take_shared<ProtocolConfig>();
     let mut pool = ts.take_shared<RiskPool>();
     let mut policy_reg = ts.take_shared<PolicyRegistry>();
-    let character = test_scenario::take_shared_by_id<Character>(&ts, char_id);
     let payment = coin::mint_for_testing<SUI>(OVERPAYMENT, ts.ctx());
     let clk = clock::create_for_testing(ts.ctx());
 
     let policy = ssu_extension::purchase_via_ssu(
-        &ssu, &cfg, &mut pool, &mut policy_reg, &character,
+        &ssu, &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, payment, &clk, ts.ctx(),
     );
     // Should never reach here
     transfer::public_transfer(policy, PLAYER_A);
     clk.destroy_for_testing();
-    test_scenario::return_shared(character);
     test_scenario::return_shared(policy_reg);
     test_scenario::return_shared(pool);
     test_scenario::return_shared(cfg);

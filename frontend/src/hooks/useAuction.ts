@@ -4,20 +4,16 @@ import {
 } from '@mysten/dapp-kit-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SHARED_OBJECTS } from '../lib/contracts';
+import { rpcGetObject } from '../lib/rpc';
 import { buildPlaceBid, buildSettleAuction, buildBuyout, buildDestroyUnsold } from '../lib/ptb/auction';
 import { useState, useCallback } from 'react';
 
 export function useAuctionDetail(auctionId: string | undefined) {
-  const client = useCurrentClient();
-
   return useQuery({
     queryKey: ['auction', auctionId],
     queryFn: async () => {
-      const result = await client.getObject({
-        objectId: auctionId!,
-        include: { content: true },
-      });
-      return result.object;
+      const result = await rpcGetObject(auctionId!);
+      return result.data;
     },
     enabled: !!auctionId,
     refetchInterval: 10_000,
@@ -25,16 +21,11 @@ export function useAuctionDetail(auctionId: string | undefined) {
 }
 
 export function useAuctionRegistry() {
-  const client = useCurrentClient();
-
   return useQuery({
     queryKey: ['auctionRegistry'],
     queryFn: async () => {
-      const result = await client.getObject({
-        objectId: SHARED_OBJECTS.auctionRegistry,
-        include: { content: true },
-      });
-      return result.object;
+      const result = await rpcGetObject(SHARED_OBJECTS.auctionRegistry);
+      return result.data;
     },
     refetchInterval: 15_000,
   });

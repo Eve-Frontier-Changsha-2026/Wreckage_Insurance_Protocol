@@ -47,14 +47,14 @@ fun make_killmail(
 
 fun make_policy(ctx: &mut TxContext): wreckage_protocol::policy::InsurancePolicy {
     policy::create(
-        tid(VICTIM_ID), COVERAGE, PREMIUM, 2, false, 0,
+        @0xBEEF, COVERAGE, PREMIUM, 2, false, 0,
         POLICY_CREATED, POLICY_EXPIRES, ctx,
     )
 }
 
 fun make_policy_with_rider(ctx: &mut TxContext): wreckage_protocol::policy::InsurancePolicy {
     policy::create(
-        tid(VICTIM_ID), COVERAGE, PREMIUM, 2, true, 350_000_000,
+        @0xBEEF, COVERAGE, PREMIUM, 2, true, 350_000_000,
         POLICY_CREATED, POLICY_EXPIRES, ctx,
     )
 }

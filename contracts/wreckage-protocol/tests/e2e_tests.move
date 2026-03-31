@@ -45,6 +45,7 @@ const TRIBE_ID: u32 = 1;
 const COVERAGE: u64 = 10_000_000_000;     // 10 SUI
 const OVERPAYMENT: u64 = 20_000_000_000;  // 20 SUI
 const LP_DEPOSIT: u64 = 100_000_000_000;  // 100 SUI
+const INSURED: address = @0xBEEF;
 
 // Tier 2 test config payouts (deductible 10%, decay 10%, SD rate 50%)
 const EXPECTED_PAYOUT_0: u64 = 9_000_000_000;   // first claim, no decay
@@ -134,7 +135,7 @@ fun test_e2e_full_lifecycle() {
         let payment = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
 
         let mut policy_a = underwriting::purchase_policy(
-            &cfg, &mut pool, &mut policy_reg, &character,
+            &cfg, &mut pool, &mut policy_reg, INSURED,
             COVERAGE, true, payment, &clk, scenario.ctx(),
         );
 
@@ -278,7 +279,7 @@ fun test_e2e_self_destruct_claim() {
 
     let payment = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     let mut policy_d = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, true, payment, &clk, scenario.ctx(),
     );
 
@@ -332,7 +333,7 @@ fun test_e2e_renewal_after_claim() {
 
     let pay = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     let mut pa = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, pay, &clk, scenario.ctx(),
     );
 
@@ -386,13 +387,12 @@ fun test_e2e_ncb_capped_discount() {
     let cfg = scenario.take_shared<ProtocolConfig>();
     let mut pool = scenario.take_shared<RiskPool>();
     let mut policy_reg = scenario.take_shared<PolicyRegistry>();
-    let character = scenario.take_shared<Character>();
     let mut clk = clock::create_for_testing(scenario.ctx());
     clock::set_for_testing(&mut clk, 1_000_000);
 
     let pay = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     let mut pe = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, pay, &clk, scenario.ctx(),
     );
 
@@ -411,7 +411,6 @@ fun test_e2e_ncb_capped_discount() {
     assert!(policy::premium_paid(&pe) == 350_000_000);
 
     pe.destroy();
-    test_scenario::return_shared(character);
     test_scenario::return_shared(policy_reg);
     test_scenario::return_shared(pool);
     test_scenario::return_shared(cfg);
@@ -442,7 +441,7 @@ fun test_e2e_duplicate_killmail_rejected() {
 
     let pay = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     let mut pa = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, pay, &clk, scenario.ctx(),
     );
 
@@ -495,25 +494,23 @@ fun test_e2e_duplicate_character_policy_rejected() {
     let cfg = scenario.take_shared<ProtocolConfig>();
     let mut pool = scenario.take_shared<RiskPool>();
     let mut policy_reg = scenario.take_shared<PolicyRegistry>();
-    let character = scenario.take_shared<Character>();
     let clk = clock::create_for_testing(scenario.ctx());
 
     let pay1 = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     let p1 = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, pay1, &clk, scenario.ctx(),
     );
 
     // Second purchase same character → abort
     let pay2 = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     let p2 = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, pay2, &clk, scenario.ctx(),
     );
 
     p1.destroy();
     p2.destroy();
-    test_scenario::return_shared(character);
     test_scenario::return_shared(policy_reg);
     test_scenario::return_shared(pool);
     test_scenario::return_shared(cfg);
@@ -640,7 +637,7 @@ fun test_monkey_max_claims_boundary() {
 
     let pay = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     let mut pa = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, pay, &clk, scenario.ctx(),
     );
 
@@ -702,18 +699,16 @@ fun test_monkey_zero_coverage() {
     let cfg = scenario.take_shared<ProtocolConfig>();
     let mut pool = scenario.take_shared<RiskPool>();
     let mut policy_reg = scenario.take_shared<PolicyRegistry>();
-    let character = scenario.take_shared<Character>();
     let clk = clock::create_for_testing(scenario.ctx());
     let pay = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
 
     // Coverage = 0 → should abort
     let p = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         0, false, pay, &clk, scenario.ctx(),
     );
 
     p.destroy();
-    test_scenario::return_shared(character);
     test_scenario::return_shared(policy_reg);
     test_scenario::return_shared(pool);
     test_scenario::return_shared(cfg);
@@ -742,7 +737,7 @@ fun test_monkey_self_destruct_without_rider() {
     // Purchase WITHOUT self-destruct rider
     let pay = coin::mint_for_testing<SUI>(OVERPAYMENT, scenario.ctx());
     let mut pa = underwriting::purchase_policy(
-        &cfg, &mut pool, &mut policy_reg, &character,
+        &cfg, &mut pool, &mut policy_reg, INSURED,
         COVERAGE, false, pay, &clk, scenario.ctx(),
     );
 

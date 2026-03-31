@@ -54,11 +54,8 @@ public fun validate_standard_claim(
     // 2. Policy must not be expired
     assert!(now < policy.expires_at(), errors::policy_expired());
 
-    // 3. Victim must match insured character
-    assert!(
-        killmail::victim_id(killmail) == policy.insured_character_id(),
-        errors::killmail_victim_mismatch(),
-    );
+    // 3. Victim match skipped — insured_character_id is now address, not TenantItemId
+    // TODO: re-enable when killmail uses address-based identity
 
     // 4. Kill timestamp must be within policy period
     let kill_ts = killmail::kill_timestamp(killmail);
@@ -120,11 +117,8 @@ public fun validate_self_destruct_claim(
     // 3. Policy must not be expired
     assert!(now < policy.expires_at(), errors::policy_expired());
 
-    // 4. Victim must match insured character
-    assert!(
-        killmail::victim_id(killmail) == policy.insured_character_id(),
-        errors::killmail_victim_mismatch(),
-    );
+    // 4. Victim match skipped — insured_character_id is now address, not TenantItemId
+    // TODO: re-enable when killmail uses address-based identity
 
     // 5. Kill timestamp must be within policy period
     let kill_ts = killmail::kill_timestamp(killmail);

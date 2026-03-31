@@ -7,6 +7,8 @@ use wreckage_protocol::init as protocol_init;
 use wreckage_protocol::registry::{Self, ClaimRegistry, PolicyRegistry};
 use world::test_helpers;
 
+const INSURED: address = @0xBEEF;
+
 #[test]
 fun test_claim_registry_dedup() {
     let admin = @0xAD;
@@ -53,15 +55,14 @@ fun test_policy_registry_register_and_unregister() {
     scenario.next_tx(admin);
 
     let mut policy_reg = scenario.take_shared<PolicyRegistry>();
-    let char_id = test_helpers::in_game_id(42);
     let policy_id = object::id_from_address(@0x456);
 
-    assert!(!registry::has_active_policy(&policy_reg, char_id));
-    registry::register_policy(&mut policy_reg, char_id, policy_id);
-    assert!(registry::has_active_policy(&policy_reg, char_id));
+    assert!(!registry::has_active_policy(&policy_reg, INSURED));
+    registry::register_policy(&mut policy_reg, INSURED, policy_id);
+    assert!(registry::has_active_policy(&policy_reg, INSURED));
 
-    registry::unregister_policy(&mut policy_reg, char_id);
-    assert!(!registry::has_active_policy(&policy_reg, char_id));
+    registry::unregister_policy(&mut policy_reg, INSURED);
+    assert!(!registry::has_active_policy(&policy_reg, INSURED));
 
     test_scenario::return_shared(policy_reg);
     scenario.end();
@@ -76,10 +77,9 @@ fun test_policy_registry_rejects_duplicate_character() {
     scenario.next_tx(admin);
 
     let mut policy_reg = scenario.take_shared<PolicyRegistry>();
-    let char_id = test_helpers::in_game_id(42);
 
-    registry::register_policy(&mut policy_reg, char_id, object::id_from_address(@0x111));
-    registry::register_policy(&mut policy_reg, char_id, object::id_from_address(@0x222)); // abort
+    registry::register_policy(&mut policy_reg, INSURED, object::id_from_address(@0x111));
+    registry::register_policy(&mut policy_reg, INSURED, object::id_from_address(@0x222)); // abort
 
     test_scenario::return_shared(policy_reg);
     scenario.end();
@@ -93,11 +93,10 @@ fun test_unregister_nonexistent_is_noop() {
     scenario.next_tx(admin);
 
     let mut policy_reg = scenario.take_shared<PolicyRegistry>();
-    let char_id = test_helpers::in_game_id(999);
 
     // Should not abort
-    registry::unregister_policy(&mut policy_reg, char_id);
-    assert!(!registry::has_active_policy(&policy_reg, char_id));
+    registry::unregister_policy(&mut policy_reg, @0xDEAD);
+    assert!(!registry::has_active_policy(&policy_reg, @0xDEAD));
 
     test_scenario::return_shared(policy_reg);
     scenario.end();

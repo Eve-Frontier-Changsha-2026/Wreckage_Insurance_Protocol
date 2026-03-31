@@ -5,6 +5,7 @@ import { NETWORKS, DEFAULT_NETWORK, GRPC_URLS, type Network } from './config/net
 export const dAppKit = createDAppKit({
   networks: [...NETWORKS],
   defaultNetwork: DEFAULT_NETWORK,
+  autoConnect: true,
   createClient: (network) =>
     new SuiGrpcClient({
       network: network as Network,

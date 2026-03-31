@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
 import { ConnectButton } from '@mysten/dapp-kit-react';
 import { useRiskPoolDetail, useOwnedLPPositions, useWithdraw } from '../../hooks/useRiskPool';
+import PoolSelector from '../../components/pool/PoolSelector';
 import ExitFeeIndicator from '../../components/pool/ExitFeeIndicator';
 
 function parsePoolFields(pool: unknown) {
@@ -19,22 +20,30 @@ function parsePosFields(position: unknown) {
   return fields ?? null;
 }
 
+function extractBalance(raw: unknown): number {
+  if (typeof raw === 'object' && raw !== null) {
+    const obj = raw as Record<string, unknown>;
+    return Number(obj.value ?? (obj.fields as Record<string, unknown>)?.value ?? 0);
+  }
+  return Number(raw ?? 0);
+}
+
 function computeSharePrice(pool: unknown): number {
   const fields = parsePoolFields(pool);
   if (!fields) return 0;
-  const totalDeposits = Number(fields.total_deposits ?? fields.totalDeposits ?? 0);
+  const totalLiquidity = extractBalance(fields.total_liquidity);
   const totalShares = Number(fields.total_shares ?? fields.totalShares ?? 0);
   if (totalShares === 0) return 0;
-  return totalDeposits / totalShares;
+  return totalLiquidity / totalShares;
 }
 
 function computeUtilization(pool: unknown): number {
   const fields = parsePoolFields(pool);
   if (!fields) return 0;
-  const totalDeposits = Number(fields.total_deposits ?? fields.totalDeposits ?? 0);
+  const totalLiquidity = extractBalance(fields.total_liquidity);
   const reservedAmount = Number(fields.reserved_amount ?? fields.reservedAmount ?? 0);
-  if (totalDeposits === 0) return 0;
-  return (reservedAmount / totalDeposits) * 100;
+  if (totalLiquidity === 0) return 0;
+  return (reservedAmount / totalLiquidity) * 100;
 }
 
 function truncate(id: string) {
@@ -156,32 +165,19 @@ export default function WithdrawPage() {
         </p>
 
         <form onSubmit={handleWithdraw} className="flex flex-col gap-6">
-          {/* Pool ID */}
+          {/* Pool Selection */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h2 className="text-orange-400 font-semibold text-sm uppercase tracking-wider mb-4">
-              Step 1 — Pool ID
+              Step 1 — Select Pool
             </h2>
-            <label className="block text-gray-400 text-xs mb-1">Risk Pool Object ID</label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={poolId}
-                onChange={(e) => setPoolId(e.target.value)}
-                placeholder="0x..."
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-orange-500 placeholder-gray-600"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setLoadedPoolId(poolId.trim() || undefined);
-                  setSelectedPositionId('');
-                }}
-                disabled={!poolId.trim()}
-                className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm px-3 py-2 rounded-lg transition-colors"
-              >
-                Load
-              </button>
-            </div>
+            <PoolSelector
+              value={loadedPoolId}
+              onChange={(id) => {
+                setPoolId(id);
+                setLoadedPoolId(id);
+                setSelectedPositionId('');
+              }}
+            />
             {loadedPoolId && poolLoading && (
               <p className="text-gray-500 text-xs mt-2">Loading pool...</p>
             )}
@@ -217,7 +213,7 @@ export default function WithdrawPage() {
                     const shares = Number(f?.shares ?? 0);
                     return (
                       <option key={id} value={id}>
-                        {truncate(id)} — {shares.toLocaleString()} shares
+                        {truncate(id)} — {(shares / 1_000_000_000).toFixed(4)} shares
                       </option>
                     );
                   })}
@@ -227,10 +223,10 @@ export default function WithdrawPage() {
               {selectedFields && (
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-400">
                   <span>Available Shares:</span>
-                  <span className="text-white text-right">{maxShares.toLocaleString()}</span>
+                  <span className="text-white text-right">{(maxShares / 1_000_000_000).toFixed(4)}</span>
                   <span>Deposit Amount:</span>
                   <span className="text-white text-right">
-                    {(Number(selectedFields.deposit_amount ?? selectedFields.depositAmount ?? 0) / 1_000_000_000).toFixed(4)} SUI
+                    {(Number(selectedFields.initial_deposit ?? selectedFields.deposit_amount ?? selectedFields.depositAmount ?? 0) / 1_000_000_000).toFixed(4)} SUI
                   </span>
                 </div>
               )}

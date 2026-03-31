@@ -1,9 +1,9 @@
 {
   "network": "testnet",
-  "deployedAt": "2026-03-24",
+  "deployedAt": "2026-03-28",
   "deployer": "0x1509b5fdf09296b2cf749a710e36da06f5693ccd5b2144ad643b3a895abcbc4c",
-  "packageId": "0xbb2f732232d0bf4b3c7b91cce214635e329952ff9acea810963c56cc8d28ac41",
-  "transactionDigest": "BrqfEiNGwvNwQbaEX5wB1xUd8nngPgVyFdXGQ22nBpoE",
+  "packageId": "0x986d8cf6ba2e0fe8c1e2b6aea014c68bf6a1c67bcccd6b5470fce8d6e5456ed2",
+  "transactionDigest": "GhTms7iuCnZtsBLcvDjGAPMRLch62x8T3AgnPuJqx7d",
   "modules": [
     "access", "anti_fraud", "assembly", "auction", "character", "claims",
     "config", "energy", "errors", "extension_freeze", "fuel", "gate",
@@ -14,28 +14,38 @@
     "status", "storage_unit", "subrogation", "turret", "underwriting", "world"
   ],
   "objects": {
-    "upgradeCap": "0x3739533d271b68d15bb5f1a28bc89e2f7a32d8cacf666c59c40022eb05f03179",
-    "adminCap": "0x8fe5a8540278123465958930271f79448934b31873a86225a7c02c7591fc2038",
-    "protocolConfig": "0x0e9ca9dbc87e828f907f0c8011973a9ba5ee8d3c1e0bea08b42f050a622d4523",
-    "policyRegistry": "0x11903d4c33205930b2fd9f79cbf2899d301940a4dc79b01e76981ab3806fbef8",
-    "claimRegistry": "0xe42f02223e9e635a2b03c9e3337fdcba0fb1a9bb7fba469df17bb70c142d8036",
-    "auctionRegistry": "0x682807b31effdf6160e296b00012331b3a58b8560b102f733dfc6919944e29f9",
-    "valuationRegistry": "0x0a617a6b38cbe66b8f0e00d9b10daf3f6383bf62c9e13ad3de6d89716f99f77a",
-    "adminACL": "0xbbb9c276590bff270164f0052f4c41d6d245dab72fcb4ba74c31fc04d381c0f7",
-    "serverAddressRegistry": "0x48913c260e24e1817c4015d34328972bd33546368bedf60b8febcb3d9497f88e",
-    "governorCap": "0x432e95df0828dd2502f174fc568434c2e48dd26db47567f2db123ad6d7493716"
+    "upgradeCap": "0x03954cae503a38755fc489e7395b9cdd81c149f74b6bc86c594b8572e74a28f8",
+    "adminCap": "0x60d0ac792ce7a2ba2830b1523ef15b9cc8aed17d4ad95d15b53d7c8d1a070a0b",
+    "protocolConfig": "0xf5a5ca0a0d186fc82dc5a184c4b94befa3bbc0e41eb25e02a5eacf0829fc3e3a",
+    "policyRegistry": "0x92a86986f650878762591c3a9f75f133be1fd1f35145d46202db623bb40d6edc",
+    "claimRegistry": "0xb75340106ae01287f3dc41fec308ffc44a162eabf7c598c8a21db5f5cb3995df",
+    "auctionRegistry": "0x8d3f6c002f7693250e91789738171b439aa38de184656db4dc36d589eb40ad4f",
+    "valuationRegistry": "0x0b9cbbffb3c2a743d7afd5b6f0c3f0132108802de21b05b0dbd5656952fc78bb",
+    "adminACL": "0x69211b06b724ee1852e3cd430e835012d0fafa3a51468f98843428c2794a425d",
+    "serverAddressRegistry": "0x9a7c90788b0ec59b61e1fed2edef31a8001a8010add771b999e8865b1943d4ba",
+    "governorCap": "0x2a1f519b6654f6513b13179d9b4c8374df25ae975b85b5ca7139b2d5300883d0"
   },
   "worldObjects": {
-    "fuelConfig": "0xc9f3bc82be39adce1dcec106dfb407617ead1eec59cd86d0c2e08c42d3c82613",
-    "gateConfig": "0xd6e52bfdafd10682c893963ff76659ef866c073c1ce549e3765fa6712c055e58",
-    "killmailRegistry": "0x0c54bb0a04553283554cf4add413144ba98b2476ceda75833fa2a1da8f2831ab",
-    "locationRegistry": "0xa04b6551265609e1c77f2f0e25e9964d1df9825d2a94c753b6f4e35d36d9d949",
-    "energyConfig": "0xe513cb5add3a5084b4163668dc5be1d81f698b64ef1eb9a7b51b49e5e9e6aff5",
-    "objectRegistry": "0x193ad59dc6d6977ae412ae0027a0fb7cd65f2d40489e19714b7c6601aeec584c"
+    "fuelConfig": "0xcf40338c54ef6cc22286e787824dc0c682e37548fbd745363be39b7e8e71a32c",
+    "gateConfig": "0xfa536f2f547ef771aa72e187214a7e976d80e6dcb30581b04e47d4dc3d2b8946",
+    "killmailRegistry": "0x0c3e7a3855fbbdf6f7e12bbb4ffcf5b2a2bf732305e35be4a81684a719794a92",
+    "locationRegistry": "0xd7ac9bc6b1859868cb2861cc07a2bd4b63cf8889ab455ed1c0b2f57dfd98b531",
+    "energyConfig": "0xcde5bb33eee1fc5417ca91284b82943bc518cf591e7fc5a7f46eba8f6d78c86f",
+    "objectRegistry": "0x65d644ca1588e17377ee1fc28c2f21780d74b01155c715a8ce77dbfe995584f1"
   },
-  "gasUsed": "0.810 SUI",
-  "notes": "Redeployment v6: EVE SDK integration — ssu_extension + item_valuation modules, ValuationRegistry shared object. Package size optimization: removed unused error constants + integration mocks to fit 100KB limit.",
+  "gasUsed": "0.809 SUI",
+  "notes": "Redeployment v8: Character→Address migration — purchase_policy uses wallet address instead of Character object, anti_fraud victim match temporarily skipped for hackathon demo.",
   "previousDeployments": {
+    "v7-2026-03-26": {
+      "packageId": "0xbf1e96cbdb96e317d1f32594e1259236766b5a364d188df92067dc28222ad59b",
+      "upgradeCap": "0xccaab7da09fe8eba6265af6d887141de47494a1fbecf9ab5a7e6df358a0c8d4d",
+      "note": "Pool discovery — PoolCreatedEvent emission, frontend auto-discover"
+    },
+    "v6-2026-03-24": {
+      "packageId": "0xbb2f732232d0bf4b3c7b91cce214635e329952ff9acea810963c56cc8d28ac41",
+      "upgradeCap": "0x3739533d271b68d15bb5f1a28bc89e2f7a32d8cacf666c59c40022eb05f03179",
+      "note": "EVE SDK integration — ssu_extension + item_valuation"
+    },
     "v5-2026-03-23": {
       "packageId": "0xc4a0468d35e9c0e8e85201a00897f3ca6ac69cec3e4ee7721dc96a7a4a572bf6",
       "upgradeCap": "0x356317d241cc6ae41a1ee865ec91c010e1cdc65b29a791442cdb335767441c96",

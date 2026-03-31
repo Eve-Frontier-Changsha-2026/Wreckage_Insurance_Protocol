@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { usePolicyDetail, useRenewPolicy, useCancelPolicy, useTransferPolicy, useExpirePolicy } from '../../hooks/useInsurancePolicy';
+import { useDiscoverPools } from '../../hooks/useDiscoverPools';
 import type { RiskTier } from '../../lib/types';
 import { TIER_NAMES } from '../../lib/types';
-import { TIER_RATES } from '../../components/policy/RiskTierSelector';
+// Premium rates by tier (bps) — used for renewal estimate display only.
+// Accurate values come from on-chain ProtocolConfig; these are fallback defaults.
+const TIER_PREMIUM_BPS: Record<number, number> = { 0: 500, 1: 800, 2: 1200 };
 
 const MIST_PER_SUI = 1_000_000_000;
 
@@ -52,12 +55,60 @@ export default function PolicyDetailPage() {
   const { execute: transferPolicy, isPending: transferPending, error: transferError } = useTransferPolicy();
   const { execute: expire, isPending: expirePending, error: expireError } = useExpirePolicy();
 
+  const { data: pools } = useDiscoverPools();
+
   const [renewPoolId, setRenewPoolId] = useState('');
   const [renewPaymentSui, setRenewPaymentSui] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [actionPoolId, setActionPoolId] = useState('');
   const [transferRecipient, setTransferRecipient] = useState('');
 
+  // Extract fields (safe even when policyObj is null)
+  const fields = policyObj ? extractFields(policyObj) : null;
+  const objectId: string = policyObj
+    ? ((policyObj as { objectId?: string; id?: string }).objectId ?? policyId ?? '')
+    : (policyId ?? '');
+
+  const tier = Number(fields?.risk_tier ?? fields?.tier ?? 0) as RiskTier;
+  const coverage = Number(fields?.coverage_amount ?? fields?.coverageAmount ?? 0);
+  const premiumPaid = Number(fields?.premium_paid ?? fields?.premiumPaid ?? 0);
+  const createdAt = Number(fields?.created_at ?? fields?.createdAt ?? 0);
+  const expiresAt = Number(fields?.expires_at ?? fields?.expiresAt ?? 0);
+  const ncbStreak = Number(fields?.no_claim_streak ?? fields?.ncb_streak ?? 0);
+  const claimCount = Number(fields?.claim_count ?? fields?.claimCount ?? 0);
+  const hasSdRider = Boolean(fields?.has_self_destruct_rider ?? fields?.hasSelfDestructRider ?? false);
+  const insuredAddress: string = fields?.insured_character_id ?? fields?.character_id ?? '';
+  const rawStatus = fields?.status;
+  const statusNum = typeof rawStatus === 'number' ? rawStatus : parseInt(String(rawStatus ?? '0'), 10);
+  const status = statusNum === 0 ? 'active' : statusNum === 1 ? 'claimed' : statusNum === 2 ? 'expired' : statusNum === 3 ? 'cancelled' : 'expired';
+
+  // Auto-populate pool ID from policy's risk_tier
+  const resolvedPoolId = useMemo(
+    () => pools?.find((p) => p.riskTier === tier)?.poolId ?? '',
+    [pools, tier],
+  );
+
+  useEffect(() => {
+    if (resolvedPoolId && !renewPoolId) setRenewPoolId(resolvedPoolId);
+  }, [resolvedPoolId, renewPoolId]);
+
+  useEffect(() => {
+    if (resolvedPoolId && !actionPoolId) setActionPoolId(resolvedPoolId);
+  }, [resolvedPoolId, actionPoolId]);
+
+  // Estimate renewal premium
+  const renewalEstimate = useMemo(() => {
+    const bps = TIER_PREMIUM_BPS[tier] ?? 500;
+    const base = (Number(mistToSui(coverage)) * bps) / 10000;
+    return (hasSdRider ? base * 1.3 : base).toFixed(4);
+  }, [tier, coverage, hasSdRider]);
+
+  // Auto-fill renewal payment with estimate
+  useEffect(() => {
+    if (renewalEstimate && !renewPaymentSui) setRenewPaymentSui(renewalEstimate);
+  }, [renewalEstimate, renewPaymentSui]);
+
+  // Early returns AFTER all hooks
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-gray-500 text-sm p-8">
@@ -80,23 +131,6 @@ export default function PolicyDetailPage() {
       </div>
     );
   }
-
-  const fields = extractFields(policyObj);
-  const objectId: string = (policyObj as { objectId?: string; id?: string }).objectId ?? policyId ?? '';
-
-  // Extract fields with fallbacks for snake_case and camelCase
-  const tier = Number(fields?.risk_tier ?? fields?.tier ?? 0) as RiskTier;
-  const coverage = Number(fields?.coverage_amount ?? fields?.coverageAmount ?? 0);
-  const premiumPaid = Number(fields?.premium_paid ?? fields?.premiumPaid ?? 0);
-  const createdAt = Number(fields?.created_at ?? fields?.createdAt ?? 0);
-  const expiresAt = Number(fields?.expires_at ?? fields?.expiresAt ?? 0);
-  const ncbStreak = Number(fields?.no_claim_streak ?? fields?.ncb_streak ?? 0);
-  const claimCount = Number(fields?.claim_count ?? fields?.claimCount ?? 0);
-  const hasSdRider = Boolean(fields?.has_self_destruct_rider ?? fields?.hasSelfDestructRider ?? false);
-  const characterId: string = fields?.insured_character_id ?? fields?.character_id ?? '';
-  const rawStatus = fields?.status;
-  const statusNum = typeof rawStatus === 'number' ? rawStatus : parseInt(String(rawStatus ?? '0'), 10);
-  const status = statusNum === 0 ? 'active' : statusNum === 1 ? 'claimed' : statusNum === 2 ? 'expired' : statusNum === 3 ? 'cancelled' : 'expired';
 
   async function handleRenew(e: React.FormEvent) {
     e.preventDefault();
@@ -147,16 +181,6 @@ export default function PolicyDetailPage() {
       setToast({ type: 'success', msg: `Policy expired! Tx: ${digest}` });
     } catch { /* error from hook */ }
   }
-
-  // Estimate renewal premium
-  const renewalEstimate =
-    parseFloat(renewPaymentSui) > 0
-      ? null
-      : (() => {
-          const bps = TIER_RATES[tier]?.bps ?? 500;
-          const base = (Number(mistToSui(coverage)) * bps) / 10000;
-          return (hasSdRider ? base * 1.3 : base).toFixed(4);
-        })();
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
@@ -216,8 +240,8 @@ export default function PolicyDetailPage() {
               ? <span className="text-purple-400">Enabled</span>
               : <span className="text-gray-600">None</span>
           } />
-          <Field label="Risk Tier" value={`${TIER_NAMES[tier] ?? tier} (${TIER_RATES[tier]?.bps / 100 ?? '?'}%)`} />
-          {characterId && <Field label="Character ID" value={characterId} mono />}
+          <Field label="Risk Tier" value={`${TIER_NAMES[tier] ?? tier} (${TIER_PREMIUM_BPS[tier] / 100 ?? '?'}%)`} />
+          {insuredAddress && <Field label="Insured Address" value={insuredAddress} mono />}
         </div>
       ) : (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -243,20 +267,25 @@ export default function PolicyDetailPage() {
             <form onSubmit={handleRenew} className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-1" htmlFor="renew-pool">
-                  Risk Pool Object ID
+                  Risk Pool
                 </label>
                 <input
                   id="renew-pool"
                   type="text"
                   value={renewPoolId}
                   onChange={(e) => setRenewPoolId(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-orange-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-orange-500 ${
+                    resolvedPoolId ? 'bg-gray-800/50 border-gray-700/50 text-gray-400' : 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-600'
+                  }`}
                   placeholder="0x..."
                 />
+                {resolvedPoolId && (
+                  <p className="text-[11px] text-gray-600 mt-1">Auto-filled from Tier {tier} pool</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1" htmlFor="renew-payment">
-                  Payment Amount (SUI)
+                  Renewal Premium (SUI)
                 </label>
                 <div className="relative">
                   <input
@@ -267,15 +296,13 @@ export default function PolicyDetailPage() {
                     value={renewPaymentSui}
                     onChange={(e) => setRenewPaymentSui(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm placeholder-gray-600 focus:outline-none focus:border-orange-500"
-                    placeholder={renewalEstimate ?? ''}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">SUI</span>
                 </div>
-                {renewalEstimate && (
-                  <p className="text-xs text-gray-600 mt-1">
-                    Estimated renewal premium: <span className="text-orange-400">{renewalEstimate} SUI</span>
-                  </p>
-                )}
+                <p className="text-[11px] text-gray-600 mt-1">
+                  Estimated: <span className="text-orange-400">{renewalEstimate} SUI</span>
+                  {' '}(Tier {tier}, {TIER_PREMIUM_BPS[tier] / 100}%{hasSdRider ? ' + SD rider' : ''})
+                </p>
               </div>
               {renewError && <p className="text-red-400 text-sm break-all">{renewError}</p>}
               <button
@@ -301,16 +328,21 @@ export default function PolicyDetailPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
             <h2 className="text-base font-semibold text-gray-200">Policy Actions</h2>
 
-            {/* Shared Pool ID input */}
+            {/* Shared Pool ID input — auto-filled */}
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Risk Pool Object ID</label>
+              <label className="block text-sm text-gray-400 mb-1">Risk Pool</label>
               <input
                 type="text"
                 value={actionPoolId}
                 onChange={(e) => setActionPoolId(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-orange-500"
+                className={`w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-orange-500 ${
+                  resolvedPoolId ? 'bg-gray-800/50 border-gray-700/50 text-gray-400' : 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-600'
+                }`}
                 placeholder="0x..."
               />
+              {resolvedPoolId && (
+                <p className="text-[11px] text-gray-600 mt-1">Auto-filled from Tier {tier} pool</p>
+              )}
             </div>
 
             {/* Transfer */}
