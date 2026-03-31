@@ -352,13 +352,10 @@ export default function ClaimPage() {
                             setManualKillmailId('');
                             setShowAdvanced(false);
                           }}
-                          disabled={!onChain && !onChainLoading}
                           className={`w-full text-left p-3 rounded-lg border transition-colors ${
                             isSelected
                               ? 'border-orange-500 bg-orange-500/10'
-                              : onChain
-                              ? 'border-gray-700 hover:border-gray-600 cursor-pointer'
-                              : 'border-gray-800 opacity-50 cursor-not-allowed'
+                              : 'border-gray-700 hover:border-gray-600 cursor-pointer'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
@@ -386,6 +383,20 @@ export default function ClaimPage() {
                             <p className="mt-1.5 text-[10px] text-gray-600 font-mono break-all">
                               {onChain.suiObjectId}
                             </p>
+                          )}
+                          {isSelected && !onChain && !onChainLoading && (
+                            <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                              <label className="block text-yellow-500 text-[10px] mb-1">
+                                Not on-chain yet — paste Sui Object ID to proceed
+                              </label>
+                              <input
+                                type="text"
+                                value={manualKillmailId}
+                                onChange={(e) => setManualKillmailId(e.target.value)}
+                                placeholder="0x..."
+                                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs font-mono focus:outline-none focus:border-orange-500 placeholder-gray-600"
+                              />
+                            </div>
                           )}
                         </button>
                       );

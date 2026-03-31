@@ -1,3 +1,6 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/eve-eyes/:path*", "destination": "https://eve-eyes.d0v.xyz/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
