@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDiscoverPools, TIER_LABELS } from '../../hooks/useDiscoverPools';
+import { isValidObjectId } from '../../lib/validation';
 
 interface PoolSelectorProps {
   value: string | undefined;
@@ -47,9 +48,9 @@ export default function PoolSelector({
             type="button"
             onClick={() => {
               const trimmed = manualInput.trim();
-              if (trimmed) onChange(trimmed);
+              if (trimmed && isValidObjectId(trimmed)) onChange(trimmed);
             }}
-            disabled={!manualInput.trim()}
+            disabled={!manualInput.trim() || !isValidObjectId(manualInput.trim())}
             className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm px-3 py-2 rounded-lg transition-colors"
           >
             Load

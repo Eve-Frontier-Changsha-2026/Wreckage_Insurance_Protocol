@@ -11,7 +11,9 @@ const TIER_PREMIUM_BPS: Record<number, number> = { 0: 500, 1: 800, 2: 1200 };
 const MIST_PER_SUI = 1_000_000_000;
 
 function mistToSui(mist: number | string): string {
-  return (Number(mist) / MIST_PER_SUI).toFixed(4);
+  const n = Number(mist);
+  if (!Number.isFinite(n)) return '0.0000';
+  return (n / MIST_PER_SUI).toFixed(4);
 }
 
 const TIER_BADGE: Record<number, string> = {
@@ -140,7 +142,12 @@ export default function PolicyDetailPage() {
       return;
     }
     try {
-      const paymentMist = BigInt(Math.round(parseFloat(renewPaymentSui) * 1e9));
+      const parsed = parseFloat(renewPaymentSui);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        setToast({ type: 'error', msg: 'Invalid payment amount.' });
+        return;
+      }
+      const paymentMist = BigInt(Math.round(parsed * 1e9));
       const digest = await renew({
         policyId: objectId,
         poolId: renewPoolId.trim(),
@@ -156,6 +163,7 @@ export default function PolicyDetailPage() {
 
   async function handleCancel() {
     if (!actionPoolId.trim()) { setToast({ type: 'error', msg: 'Pool ID required for cancel.' }); return; }
+    if (!window.confirm('Cancel this policy? This is irreversible and premium will NOT be refunded.')) return;
     setToast(null);
     try {
       const digest = await cancel({ policyId: objectId, poolId: actionPoolId.trim() });

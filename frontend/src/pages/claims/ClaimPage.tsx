@@ -13,6 +13,7 @@ import {
 import { useSolarSystemNames } from '../../hooks/useSolarSystem';
 import { useDiscoverPools } from '../../hooks/useDiscoverPools';
 import { TIER_NAMES } from '../../lib/types';
+import { isValidObjectId } from '../../lib/validation';
 
 type ClaimType = 'normal' | 'selfDestruct';
 
@@ -30,7 +31,8 @@ function parsePolicyFields(obj: unknown) {
 export default function ClaimPage() {
   const account = useCurrentAccount();
   const [searchParams] = useSearchParams();
-  const urlPolicyId = searchParams.get('policyId') ?? '';
+  const rawUrlPolicyId = searchParams.get('policyId') ?? '';
+  const urlPolicyId = isValidObjectId(rawUrlPolicyId) ? rawUrlPolicyId : '';
 
   const { data: policies, isLoading: policiesLoading } = useOwnedPolicies();
   const submitClaim = useSubmitClaim();
@@ -127,9 +129,9 @@ export default function ClaimPage() {
   }
 
   const canSubmit =
-    selectedPolicyId.trim() !== '' &&
-    killmailId.trim() !== '' &&
-    poolId.trim() !== '' &&
+    isValidObjectId(selectedPolicyId.trim()) &&
+    isValidObjectId(killmailId.trim()) &&
+    isValidObjectId(poolId.trim()) &&
     !isPending &&
     isActive;
 

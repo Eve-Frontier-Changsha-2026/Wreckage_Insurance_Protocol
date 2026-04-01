@@ -1,10 +1,10 @@
 // Dev: Vite proxy, Prod: Vercel rewrite — both use /eve-eyes prefix to bypass CORS
 const EVE_EYES_BASE = '/eve-eyes';
-const EVE_EYES_API_KEY = 'eve_ak_OGg2rSPof-S_13eN_kpDeIw4-rG5_q8leYZhdL2IV5w';
+const EVE_EYES_API_KEY = import.meta.env.VITE_EVE_EYES_API_KEY ?? '';
 
-const headers = {
-  Authorization: `ApiKey ${EVE_EYES_API_KEY}`,
-};
+const headers: Record<string, string> = EVE_EYES_API_KEY
+  ? { Authorization: `ApiKey ${EVE_EYES_API_KEY}` }
+  : {};
 
 // --- Types ---
 

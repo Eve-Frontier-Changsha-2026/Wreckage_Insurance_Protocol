@@ -52,7 +52,8 @@ export default function DepositPage() {
 
   const sharePrice = poolData ? computeSharePrice(poolData) : 0;
   const amountFloat = parseFloat(amountSui) || 0;
-  const amountMist = BigInt(Math.floor(amountFloat * 1_000_000_000));
+  const safeAmount = Number.isFinite(amountFloat) && amountFloat > 0 ? amountFloat : 0;
+  const amountMist = BigInt(Math.floor(safeAmount * 1_000_000_000));
   const estimatedShares =
     sharePrice > 0 && amountFloat > 0
       ? ((amountFloat * 1_000_000_000) / sharePrice).toFixed(4)

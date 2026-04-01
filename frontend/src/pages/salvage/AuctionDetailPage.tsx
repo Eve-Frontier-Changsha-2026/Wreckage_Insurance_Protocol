@@ -11,7 +11,9 @@ function truncate(addr: string, chars = 8) {
 }
 
 function mistToSui(mist: number) {
-  return (mist / 1_000_000_000).toFixed(4);
+  const n = Number(mist);
+  if (!Number.isFinite(n)) return '0.0000';
+  return (n / 1_000_000_000).toFixed(4);
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -118,7 +120,7 @@ export default function AuctionDetailPage() {
   async function handleBuyout() {
     if (!poolId.trim()) { setTxError('Pool ID required'); return; }
     const amount = parseFloat(buyoutSui);
-    if (!buyoutSui || isNaN(amount) || amount <= 0) { setTxError('Invalid buyout amount'); return; }
+    if (!buyoutSui || !Number.isFinite(amount) || amount <= 0) { setTxError('Invalid buyout amount'); return; }
     setTxError(null);
     try {
       const paymentAmountMist = BigInt(Math.floor(amount * 1_000_000_000));

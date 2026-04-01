@@ -15,7 +15,9 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 function mistToSui(mist: number): string {
-  return (mist / 1_000_000_000).toFixed(4);
+  const n = Number(mist);
+  if (!Number.isFinite(n)) return '0.0000';
+  return (n / 1_000_000_000).toFixed(4);
 }
 
 /** Safely extract fields from a gRPC object's content */
@@ -50,19 +52,15 @@ export default function PolicyCard({ policy, onClick }: PolicyCardProps) {
     );
   }
 
-  const tier = Number(fields.tier ?? 0) as RiskTier;
+  const rawTier = Number(fields.risk_tier ?? fields.tier ?? 0);
+  const tier = (rawTier >= 0 && rawTier <= 2 ? rawTier : 0) as RiskTier;
   const coverage = Number(fields.coverage_amount ?? fields.coverageAmount ?? 0);
-  const ncbStreak = Number(fields.ncb_streak ?? fields.ncbStreak ?? 0);
+  const ncbStreak = Number(fields.no_claim_streak ?? fields.ncb_streak ?? fields.ncbStreak ?? 0);
   const hasSdRider = Boolean(fields.has_self_destruct_rider ?? fields.hasSelfDestructRider ?? false);
   const rawStatus = fields.status;
   const statusNum = typeof rawStatus === 'number' ? rawStatus : Number(rawStatus);
-  const status = statusNum === 0 || String(rawStatus).toLowerCase().includes('active')
-    ? 'active'
-    : statusNum === 1 || String(rawStatus).toLowerCase().includes('claim')
-    ? 'claimed'
-    : statusNum === 3 || String(rawStatus).toLowerCase().includes('cancel')
-    ? 'cancelled'
-    : 'expired';
+  const STATUS_MAP: Record<number, string> = { 0: 'active', 1: 'claimed', 2: 'expired', 3: 'cancelled' };
+  const status = STATUS_MAP[statusNum] ?? 'expired';
 
   return (
     <div

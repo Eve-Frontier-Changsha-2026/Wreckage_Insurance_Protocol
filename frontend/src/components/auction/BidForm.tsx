@@ -18,7 +18,7 @@ export default function BidForm({ auctionId, currentHighestBid, onSuccess }: Pro
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const amount = parseFloat(bidSui);
-    if (!bidSui || isNaN(amount)) return;
+    if (!bidSui || !Number.isFinite(amount) || amount <= 0) return;
 
     const bidMist = BigInt(Math.floor(amount * 1_000_000_000));
     const minMist = BigInt(currentHighestBid) + 1n;

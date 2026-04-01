@@ -2,6 +2,7 @@ tasks/progress.md
 tasks/lessons.md
 
 # Move build artifacts
+contracts/wreckage-core/build/
 contracts/wreckage-protocol/build/
 contracts/world-contracts/build/
 
@@ -10,3 +11,8 @@ contracts/world-contracts/build/
 
 # Superpowers
 .superpowers/
+
+# Environment variables
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
